@@ -65,6 +65,16 @@ svg { display: block; width: 100%; height: 100%; pointer-events: none; }
 }
 #btn-buzina.apertado { background: rgba(255, 200, 40, .9); color: #1b2430; transform: translateX(-50%) scale(.93); }
 
+/* Botão da caçamba, ao lado da buzina */
+#btn-cacamba {
+  position: absolute; left: calc(50% + 17vh); bottom: max(6vh, env(safe-area-inset-bottom));
+  width: 20vh; height: 20vh; min-width: 76px; min-height: 76px;
+  border-radius: 50%; padding: 4.2vh;
+  background: rgba(240, 120, 30, .8); border: 3px solid rgba(255,255,255,.6);
+}
+#btn-cacamba.ligado { background: rgba(255, 200, 40, .95); color: #1b2430; }
+#btn-cacamba:active { transform: scale(.93); }
+
 /* Direita: câmbio e pedais */
 #lado-direito { position: absolute; right: max(4vh, env(safe-area-inset-right)); bottom: max(5vh, env(safe-area-inset-bottom));
   display: flex; gap: 4vh; align-items: flex-end; }
@@ -152,4 +162,30 @@ svg { display: block; width: 100%; height: 100%; pointer-events: none; }
 #caixa-erro {
   position: fixed; left: 2vh; bottom: 2vh; z-index: 40; max-width: 60vw;
   background: #b3261e; color: #fff; padding: 1.5vh 2vh; border-radius: 1.5vh; font-size: 3.2vh;
+}
+
+/* ===== Garagem ===== */
+#tela-garagem { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
+#tela-garagem button { pointer-events: auto; }
+#cores-garagem {
+  position: absolute; left: max(4vh, env(safe-area-inset-left)); bottom: max(5vh, env(safe-area-inset-bottom));
+  display: grid; grid-template-columns: repeat(4, 15vh); gap: 3vh; pointer-events: auto;
+}
+.cor-garagem {
+  width: 15vh; height: 15vh; min-width: 54px; min-height: 54px; border-radius: 50%;
+  border: 4px solid rgba(255,255,255,.85); box-shadow: 0 .8vh 0 rgba(0,0,0,.25);
+  transition: transform .12s;
+}
+.cor-garagem.selecionada { transform: scale(1.18); border-color: #f5b82e; border-width: 6px; }
+#btn-cacamba-garagem {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: max(5vh, env(safe-area-inset-bottom));
+  width: 22vh; height: 22vh; min-width: 80px; min-height: 80px; border-radius: 50%; padding: 4.6vh;
+  background: rgba(240, 120, 30, .85); border: 3px solid rgba(255,255,255,.7);
+}
+#btn-cacamba-garagem:active { transform: translateX(-50%) scale(.93); }
+#btn-dirigir {
+  position: absolute; right: max(5vh, env(safe-area-inset-right)); bottom: max(5vh, env(safe-area-inset-bottom));
+  width: 36vh; height: 36vh; min-width: 120px; min-height: 120px; border-radius: 50%;
+  padding: 8vh 6vh 8vh 9vh; background: #2fa84f; color: #fff; box-shadow: 0 1vh 0 #1f7a37;
+  animation: pulsar 1.4s ease-in-out infinite;
 }

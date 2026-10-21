@@ -60,6 +60,11 @@ export class Audio {
     this.motorGanho.gain.setTargetAtTime(0.10 + rotacao * 0.08 + (acelerando ? 0.04 : 0), t, 0.2);
   }
 
+  desligarMotor() {
+    if (!this.ctx) return;
+    this.motorGanho.gain.setTargetAtTime(0, this.ctx.currentTime, 0.15);
+  }
+
   // ----- Buzina: duas notas juntas, como buzina de caminhão -----
   _criarBuzina() {
     const c = this.ctx;
@@ -115,6 +120,24 @@ export class Audio {
     this.bipTempo = (this.bipTempo + dt) % 1;
     const tocando = this.bipTempo < 0.5;
     this.bipGanho.gain.setTargetAtTime(tocando ? 0.07 : 0, this.ctx.currentTime, 0.008);
+  }
+
+  // ----- Bomba hidráulica da caçamba -----
+  hidraulico(ligado) {
+    if (!this.ctx) return;
+    const c = this.ctx, t = c.currentTime;
+    if (!this.hidroGanho) {
+      this.hidroGanho = c.createGain();
+      this.hidroGanho.gain.value = 0;
+      const f = c.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = 180; f.Q.value = 2;
+      const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 95;
+      const o2 = c.createOscillator(); o2.type = 'square'; o2.frequency.value = 47;
+      o.connect(f); o2.connect(f);
+      f.connect(this.hidroGanho).connect(this.mestre);
+      o.start(); o2.start();
+    }
+    this.hidroGanho.gain.setTargetAtTime(ligado ? 0.09 : 0, t, 0.08);
   }
 
   // ----- Clique curto para botões -----

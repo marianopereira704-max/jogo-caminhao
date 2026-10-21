@@ -5,6 +5,7 @@ const CHAVE = 'jogo-caminhao:v1';
 const PADRAO = {
   modoDirecao: 'setas',      // 'setas' ou 'inclinacao'
   aceleradorAuto: false,
+  cor: '#f4f5f2',             // pintura do caminhão
 };
 
 export function carregar() {

@@ -39,7 +39,7 @@ function botaoToque(el, aoTocar) {
 }
 
 export class Controles {
-  constructor({ audio, preferencias, aoTrocarMarcha, aoBuzinar, aoVoltarEstrada, aoMudarPreferencias }) {
+  constructor({ audio, preferencias, aoTrocarMarcha, aoBuzinar, aoVoltarEstrada, aoMudarPreferencias, aoGaragem, aoCacamba }) {
     this.audio = audio;
     this.pref = preferencias;
     this.aoMudarPreferencias = aoMudarPreferencias;
@@ -70,6 +70,10 @@ export class Controles {
 
     // ----- Voltar para a estrada -----
     botaoToque(document.getElementById('btn-estrada'), () => { audio.clique(true); aoVoltarEstrada(); });
+
+    // ----- Garagem e caçamba -----
+    botaoToque(document.getElementById('btn-garagem'), () => aoGaragem());
+    botaoToque(document.getElementById('btn-cacamba'), () => aoCacamba());
 
     // ----- Configurações -----
     const painel = document.getElementById('painel-config');

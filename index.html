@@ -14,6 +14,9 @@
   <!-- Botões por cima do jogo -->
   <div id="hud" class="escondido">
     <div id="topo">
+      <button id="btn-garagem" class="btn-topo" aria-label="Garagem">
+        <svg viewBox="0 0 24 24"><path d="M2 10 12 3l10 7v11h-3v-8H5v8H2V10Zm5 5h10v2H7v-2Zm0 3.5h10V21H7v-2.5Z" fill="currentColor"/></svg>
+      </button>
       <button id="btn-config" class="btn-topo" aria-label="Configurações">
         <svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8.4 4.6-.1-1.1 2-1.6-2-3.4-2.4.9-.9-.6-.4-2.5h-3.9l-.4 2.5-.9.6-2.4-.9-2 3.4 2 1.6-.1 1.1.1 1.1-2 1.6 2 3.4 2.4-.9.9.6.4 2.5h3.9l.4-2.5.9-.6 2.4.9 2-3.4-2-1.6.1-1.1Z" fill="currentColor"/></svg>
       </button>
@@ -43,6 +46,11 @@
       <svg viewBox="0 0 24 24"><path d="M3 9h4l7-5v16l-7-5H3V9Zm14.5-1.5a6 6 0 0 1 0 9M16 10a2.5 2.5 0 0 1 0 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
 
+    <!-- Botão especial: levantar a caçamba -->
+    <button id="btn-cacamba" aria-label="Levantar a caçamba">
+      <svg viewBox="0 0 24 24"><path d="M3 17h3a2 2 0 1 0 4 0h5a2 2 0 1 0 4 0h2v-4l-2-3h-3V7l-9-3-1 3 8 3v3H3v4Z" fill="currentColor"/></svg>
+    </button>
+
     <!-- Lado direito: câmbio e pedais -->
     <div id="lado-direito">
       <div id="cambio" aria-label="Câmbio">
@@ -53,6 +61,17 @@
       <button id="btn-freio" class="pedal" aria-label="Freio"></button>
       <button id="btn-acelerador" class="pedal" aria-label="Acelerador"></button>
     </div>
+  </div>
+
+  <!-- Garagem: escolher a cor e ir dirigir -->
+  <div id="tela-garagem" class="escondido">
+    <div id="cores-garagem"></div>
+    <button id="btn-cacamba-garagem" aria-label="Levantar a caçamba">
+      <svg viewBox="0 0 24 24"><path d="M3 17h3a2 2 0 1 0 4 0h5a2 2 0 1 0 4 0h2v-4l-2-3h-3V7l-9-3-1 3 8 3v3H3v4Z" fill="currentColor"/></svg>
+    </button>
+    <button id="btn-dirigir" aria-label="Ir dirigir">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z" fill="currentColor"/></svg>
+    </button>
   </div>
 
   <!-- Tela inicial: o toque inicial libera tela cheia, som e sensores -->

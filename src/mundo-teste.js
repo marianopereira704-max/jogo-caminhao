@@ -1,6 +1,7 @@
 // Mundo de TESTE da etapa 1: um pátio com uma pista em volta, árvores e cones.
 // Serve só para treinar os controles. O litoral de Vitória entra na etapa 3.
 import { CONFIG } from './config.js';
+import { criarCeu } from './reflexo.js';
 
 const B = window.BABYLON;
 
@@ -35,10 +36,11 @@ export class MundoTeste {
   }
 
   _ceuELuz(scene) {
-    const ceu = B.Color3.FromHexString('#9fd0f0');
-    scene.clearColor = new B.Color4(ceu.r, ceu.g, ceu.b, 1);
+    const horizonte = B.Color3.FromHexString('#cfe6f6');
+    scene.clearColor = new B.Color4(horizonte.r, horizonte.g, horizonte.b, 1);
+    this.ceu = criarCeu(scene, ['#cfe6f6', '#cfe6f6', '#cfe6f6', '#5f9fd8']);
     scene.fogMode = B.Scene.FOGMODE_LINEAR;
-    scene.fogColor = ceu;
+    scene.fogColor = horizonte;
     scene.fogStart = 140;
     scene.fogEnd = 420;
     scene.ambientColor = new B.Color3(0.3, 0.3, 0.3);
@@ -67,6 +69,7 @@ export class MundoTeste {
 
   _chao(scene) {
     const chao = B.MeshBuilder.CreateGround('chao', { width: TAMANHO, height: TAMANHO }, scene);
+    this.chao = chao;
     const tex = new B.DynamicTexture('tex-chao', { width: PX, height: PX }, scene, true);
     tex.anisotropicFilteringLevel = 16;
     const ctx = tex.getContext();

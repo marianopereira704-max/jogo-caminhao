@@ -6,6 +6,8 @@ import { Controles } from './controles.js';
 import { Caminhao } from './caminhao.js';
 import { CameraSeguir } from './camera.js';
 import { MundoTeste } from './mundo-teste.js';
+import { Garagem } from './garagem.js';
+import { criarReflexo } from './reflexo.js';
 
 const B = window.BABYLON;
 if (!B) throw new Error('Babylon.js não carregou. Confira a internet e recarregue.');
@@ -30,6 +32,8 @@ const preferencias = carregar();
 const audio = new Audio();
 const mundo = new MundoTeste(scene);
 const caminhao = new Caminhao(scene, mundo.sombras);
+caminhao.modelo.definirReflexo(criarReflexo(scene, [mundo.ceu, mundo.chao]));
+caminhao.aplicarVisual(preferencias);
 const camera = new CameraSeguir(scene, canvas);
 
 const voltarParaEstrada = () => {
@@ -41,6 +45,33 @@ voltarParaEstrada();
 
 caminhao.aoEncostar = () => { audio.toc(); try { navigator.vibrate && navigator.vibrate(40); } catch {} };
 
+// ----- Telas: 'inicio' -> 'garagem' <-> 'dirigindo' -----
+let estado = 'inicio';
+const hud = document.getElementById('hud');
+
+const irParaGaragem = () => {
+  estado = 'garagem';
+  hud.classList.add('escondido');
+  audio.desligarMotor();
+  audio.atualizarBipRe(false, 0);
+  audio.buzina(false);
+  audio.hidraulico(false);
+  garagem.ativar();
+};
+const irDirigir = () => {
+  garagem.desativar();
+  caminhao.aplicarVisual(preferencias);
+  estado = 'dirigindo';
+  hud.classList.remove('escondido');
+};
+
+const garagem = new Garagem(engine, canvas, {
+  preferencias,
+  audio,
+  aoMudar: (p) => salvar(p),
+  aoDirigir: irDirigir,
+});
+
 const controles = new Controles({
   audio,
   preferencias,
@@ -48,6 +79,12 @@ const controles = new Controles({
   aoBuzinar: (ligada) => audio.buzina(ligada),
   aoVoltarEstrada: voltarParaEstrada,
   aoMudarPreferencias: (p) => salvar(p),
+  aoGaragem: () => { audio.clique(); irParaGaragem(); },
+  aoCacamba: () => {
+    const subindo = caminhao.alternarCacamba();
+    audio.clique(subindo);
+    document.getElementById('btn-cacamba').classList.toggle('ligado', subindo);
+  },
 });
 
 // ----- Tela cheia -----
@@ -61,24 +98,22 @@ const entrarTelaCheia = async () => {
   try { await screen.orientation.lock('landscape'); } catch {}
 };
 // se a tela cheia sair (ex.: arrastou a barra), o próximo toque volta para ela
-document.addEventListener('pointerup', () => { if (jogando && !document.fullscreenElement) entrarTelaCheia(); });
+document.addEventListener('pointerup', () => { if (estado !== 'inicio' && !document.fullscreenElement) entrarTelaCheia(); });
 
 // ----- Tela inicial: o primeiro toque libera tela cheia, som e sensores -----
 document.getElementById('btn-jogar').addEventListener('click', async (e) => {
   e.preventDefault();
-  if (jogando) return;
+  if (estado !== 'inicio') return;
   audio.iniciar();
   audio.clique(true);
-  jogando = true;
   document.getElementById('tela-inicio').classList.add('escondido');
-  document.getElementById('hud').classList.remove('escondido');
   if (preferencias.modoDirecao === 'inclinacao') controles.pedirPermissaoSensor();
+  irParaGaragem();
   await entrarTelaCheia();
 });
 
 // ----- Laço principal, limitado a 30 quadros por segundo -----
 const elVel = document.getElementById('vel');
-let jogando = false;
 let ultimo = performance.now();
 const intervalo = 1000 / CONFIG.fps;
 
@@ -89,7 +124,7 @@ const conferirQualidade = (agora) => {
   quadros++;
   if (agora - inicioJanela < 3000) return;
   const fps = quadros / ((agora - inicioJanela) / 1000);
-  if (jogando && fps < CONFIG.fps * 0.85 && resolucao > CONFIG.resolucaoMin) {
+  if (estado !== 'inicio' && fps < CONFIG.fps * 0.85 && resolucao > CONFIG.resolucaoMin) {
     resolucao = Math.max(CONFIG.resolucaoMin, resolucao - 0.25);
     ajustarResolucao();
   }
@@ -103,12 +138,18 @@ engine.runRenderLoop(() => {
   const dt = Math.min((agora - ultimo) / 1000, 0.1);
   ultimo = agora;
 
-  if (jogando) {
+  if (estado === 'garagem') {
+    garagem.atualizar(dt);
+    conferirQualidade(agora);
+    return;
+  }
+  if (estado === 'dirigindo') {
     controles.atualizar();
     caminhao.atualizar(dt, controles.estado, mundo);
     controles.mostrarMarcha(caminhao.marchaPendente || caminhao.marcha, !!caminhao.marchaPendente);
     audio.atualizarMotor(Math.abs(caminhao.velocidade) / CONFIG.velMaxFrente, controles.estado.acelerar);
     audio.atualizarBipRe(caminhao.marcha === 'R' && !caminhao.marchaPendente, dt);
+    audio.hidraulico(caminhao.cacambaMexendo);
     elVel.textContent = Math.round(caminhao.velocidadeKmh);
   }
   camera.atualizar(caminhao, dt);

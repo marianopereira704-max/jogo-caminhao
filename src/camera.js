@@ -10,8 +10,8 @@ export class CameraSeguir {
     this.cam.fov = 1.0;
     this.cam.inputs.clear();          // a câmera não responde a toques: só segue o caminhão
     this.alvo = new B.Vector3(0, 1.5, 0);
-    this.distancia = 13;
-    this.altura = 6;
+    this.distancia = 17;
+    this.altura = 7.5;
   }
 
   // posiciona sem suavizar (ao começar ou ao voltar para a estrada)
@@ -28,7 +28,7 @@ export class CameraSeguir {
     const p = caminhao.posicao;
     const desejada = new B.Vector3(p.x - f.x * this.distancia, p.y + this.altura, p.z - f.z * this.distancia);
     // mira um pouco abaixo do caminhão, para ele aparecer acima da buzina
-    const olhar = new B.Vector3(p.x + f.x * 3, p.y - 0.6, p.z + f.z * 3);
+    const olhar = new B.Vector3(p.x + f.x * 4, p.y - 0.4, p.z + f.z * 4);
     B.Vector3.LerpToRef(this.cam.position, desejada, mistura, this.cam.position);
     B.Vector3.LerpToRef(this.alvo, olhar, mistura, this.alvo);
     this.cam.setTarget(this.alvo);
