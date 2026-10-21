@@ -167,25 +167,56 @@ svg { display: block; width: 100%; height: 100%; pointer-events: none; }
 /* ===== Garagem ===== */
 #tela-garagem { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
 #tela-garagem button { pointer-events: auto; }
-#cores-garagem {
-  position: absolute; left: max(4vh, env(safe-area-inset-left)); bottom: max(5vh, env(safe-area-inset-bottom));
-  display: grid; grid-template-columns: repeat(4, 15vh); gap: 3vh; pointer-events: auto;
+
+/* bandeja de cores à esquerda */
+#bandeja-cores {
+  position: absolute; left: max(3vh, env(safe-area-inset-left)); top: 4vh;
+  display: grid; grid-template-columns: repeat(2, 12.5vh); gap: 2.4vh; padding: 3vh;
+  background: rgba(32, 40, 58, .82); border: 3px solid rgba(255,255,255,.18); border-radius: 4vh;
+  pointer-events: auto; box-shadow: 0 1vh 3vh rgba(0,0,0,.35);
 }
 .cor-garagem {
-  width: 15vh; height: 15vh; min-width: 54px; min-height: 54px; border-radius: 50%;
-  border: 4px solid rgba(255,255,255,.85); box-shadow: 0 .8vh 0 rgba(0,0,0,.25);
+  width: 12.5vh; height: 12.5vh; min-width: 44px; min-height: 44px; border-radius: 3vh;
+  border: 4px solid rgba(20,24,34,.9); box-shadow: inset 0 -1vh 0 rgba(0,0,0,.18);
   transition: transform .12s;
 }
-.cor-garagem.selecionada { transform: scale(1.18); border-color: #f5b82e; border-width: 6px; }
+.cor-garagem.selecionada { transform: scale(1.12); border-color: #ffe26a; box-shadow: 0 0 0 .6vh #ffe26a; }
+
+/* levantar a caçamba e ir dirigir (canto superior direito) */
 #btn-cacamba-garagem {
-  position: absolute; left: 50%; transform: translateX(-50%); bottom: max(5vh, env(safe-area-inset-bottom));
-  width: 22vh; height: 22vh; min-width: 80px; min-height: 80px; border-radius: 50%; padding: 4.6vh;
-  background: rgba(240, 120, 30, .85); border: 3px solid rgba(255,255,255,.7);
+  position: absolute; right: calc(max(4vh, env(safe-area-inset-right)) + 34vh); top: 6vh;
+  width: 19vh; height: 19vh; min-width: 70px; min-height: 70px; border-radius: 50%; padding: 4vh;
+  background: rgba(240, 120, 30, .9); border: 3px solid rgba(255,255,255,.7);
 }
-#btn-cacamba-garagem:active { transform: translateX(-50%) scale(.93); }
+#btn-cacamba-garagem:active { transform: scale(.93); }
 #btn-dirigir {
-  position: absolute; right: max(5vh, env(safe-area-inset-right)); bottom: max(5vh, env(safe-area-inset-bottom));
-  width: 36vh; height: 36vh; min-width: 120px; min-height: 120px; border-radius: 50%;
-  padding: 8vh 6vh 8vh 9vh; background: #2fa84f; color: #fff; box-shadow: 0 1vh 0 #1f7a37;
+  position: absolute; right: max(4vh, env(safe-area-inset-right)); top: 4vh;
+  width: 30vh; height: 30vh; min-width: 110px; min-height: 110px; border-radius: 50%;
+  padding: 7vh 5vh 7vh 8vh; background: #2fa84f; color: #fff; box-shadow: 0 1vh 0 #1f7a37;
+  border: 4px solid rgba(255,255,255,.8);
   animation: pulsar 1.4s ease-in-out infinite;
 }
+
+/* prateleira de itens embaixo */
+#prateleira {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 30vh;
+  padding: 0 max(3vh, env(safe-area-inset-right)) max(2vh, env(safe-area-inset-bottom)) max(3vh, env(safe-area-inset-left));
+  display: flex; align-items: center; gap: 2.5vh; pointer-events: auto;
+  background: linear-gradient(#4a5574, #343d55); border-top: 1vh solid #5c6888;
+  box-shadow: 0 -1vh 3vh rgba(0,0,0,.35);
+}
+.seta-cat { width: 14vh; height: 22vh; min-width: 48px; flex: none; color: #ffd23a; padding: 2vh; border-radius: 3vh; background: rgba(0,0,0,.2); }
+.seta-cat:active { transform: scale(.9); }
+#cat-icone { width: 13vh; height: 13vh; flex: none; opacity: .9; padding: 1vh; border-radius: 50%; background: rgba(255,255,255,.1); }
+#itens { flex: 1; display: flex; justify-content: space-around; align-items: center; height: 100%; }
+#itens.entrando .item { animation: entrar .35s ease-out backwards; }
+#itens.entrando .item:nth-child(2) { animation-delay: .05s; }
+#itens.entrando .item:nth-child(3) { animation-delay: .1s; }
+#itens.entrando .item:nth-child(4) { animation-delay: .15s; }
+#itens.entrando .item:nth-child(5) { animation-delay: .2s; }
+#itens.entrando .item:nth-child(6) { animation-delay: .25s; }
+@keyframes entrar { from { transform: translateY(12vh); opacity: 0; } }
+.item { position: relative; width: 19vh; height: 19vh; min-width: 64px; min-height: 64px; padding: 1.4vh; border-radius: 3vh; transition: transform .12s; }
+.item .pe { position: absolute; left: 15%; right: 15%; bottom: -2.6vh; height: 2.4vh; border-radius: 1vh; background: #c9a46e; box-shadow: inset 0 -.6vh 0 rgba(0,0,0,.2); }
+.item.selecionado { transform: translateY(-2vh) scale(1.08); background: rgba(255, 226, 106, .22); box-shadow: 0 0 0 .6vh #ffe26a; }
+.item:active { transform: scale(.92); }

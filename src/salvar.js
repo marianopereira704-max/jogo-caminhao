@@ -7,6 +7,8 @@ const PADRAO = {
   aceleradorAuto: false,
   cor: '#f4f5f2',             // pintura do caminhão
   roda: 'aluminio',          // modelo de roda (veja modelos/rodas.js)
+  padrao: 'liso',            // padrão de pintura (veja modelos/pintura.js)
+  acessorios: [],            // acessórios ligados (veja modelos/acessorios.js)
 };
 
 export function carregar() {

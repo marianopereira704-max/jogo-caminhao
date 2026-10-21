@@ -29,6 +29,8 @@ export class Caminhao {
   aplicarVisual(pref) {
     this.modelo.definirCor(pref.cor);
     this.modelo.definirRodas(pref.roda);
+    this.modelo.definirPadrao(pref.padrao);
+    this.modelo.definirAcessorios(pref.acessorios);
   }
 
   colocarEm(x, z, angulo) {

@@ -5,6 +5,8 @@
 
 import { caixaArredondada } from './formas.js';
 import { montarRoda, raioDaRoda, reflexoRodas } from './rodas.js';
+import { montarAcessorios } from './acessorios.js';
+import { montarPintura } from './pintura.js';
 
 const B = window.BABYLON;
 
@@ -196,6 +198,11 @@ export function montarCacamba8x4(scene) {
   caixa(2.5, 0.12, 0.14, 0, yb + H - 0.06, -0.05, M.preto, cacPivo);
   for (let x = -0.9; x <= 0.91; x += 0.36) caixa(0.14, 0.05, 0.03, x, yb + 0.2, -0.1, M.refletivo, cacPivo);
 
+  // padrões de pintura nas laterais e acessórios
+  const pintura = montarPintura({ scene, cacPivo, meiaLargura: 1.335, comprimento: L - 0.2, altura: 0.95, base: yb + 0.12 });
+  const acessorios = montarAcessorios({ scene, corpo, cacPivo, M, partes });
+  let corAtual = '#f4f5f2', padraoAtual = 'liso';
+
   // pistão hidráulico (estica quando a caçamba levanta)
   const pistaoBase = new B.Vector3(0, 1.2, 1.55);
   const pistao = cilindro(0.2, 1, 0, 0, 0, M.prata, 'y', corpo, 14, 'pistao');
@@ -302,9 +309,16 @@ export function montarCacamba8x4(scene) {
       reflexoRodas(scene, textura);
     },
     definirCor(hex) {
+      corAtual = hex;
       M.pinturaCabine.diffuseColor = B.Color3.FromHexString(hex);
       M.pinturaCacamba.diffuseColor = B.Color3.FromHexString(hex);
+      pintura.definir(padraoAtual, corAtual);
     },
+    definirPadrao(padrao) {
+      padraoAtual = padrao;
+      pintura.definir(padraoAtual, corAtual);
+    },
+    definirAcessorios(lista) { acessorios.definir(lista || []); },
     farois(ligados) {
       M.farol.emissiveColor = B.Color3.FromHexString(ligados ? '#fff3c4' : '#3a382f');
       M.lanterna.emissiveColor = B.Color3.FromHexString(ligados ? '#ff2a2a' : '#3a0405');
@@ -316,6 +330,7 @@ export function montarCacamba8x4(scene) {
         v.giro.rotation.x += distancia / R;
         v.roda.atualizar(distancia / Math.max(dt, 0.001), dt, tempo);
       }
+      acessorios.atualizar(dt, distancia / Math.max(dt, 0.001));
       for (const r of rodasDianteiras) r.pivo.rotation.y = volante * 0.5 * r.fator;
     },
   };
