@@ -1,7 +1,8 @@
 // Números que definem a "sensação" do jogo. Mudar aqui muda o jogo inteiro.
 export const CONFIG = {
   fps: 30,                    // limite de quadros por segundo (economiza bateria e calor)
-  resolucaoMax: 1.75,         // multiplicador máximo de resolução da tela
+  resolucaoMax: 3,            // multiplicador máximo de resolução (3 = nativa nos celulares atuais)
+  resolucaoMin: 1.5,          // a qualidade automática nunca desce abaixo disso
 
   // Movimento do caminhão (metros e segundos)
   velMaxFrente: 13,           // ~47 km/h

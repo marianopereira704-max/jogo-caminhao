@@ -16,7 +16,7 @@ function sorteio(semente) {
 }
 
 const TAMANHO = 400;        // metros de lado
-const PX = 2048;            // resolução da textura do chão
+const PX = 4096;            // resolução da textura do chão (~10 pixels por metro)
 const ESCALA = PX / TAMANHO;
 const PISTA = { meia: 114, raio: 26, largura: 12 };
 
@@ -68,7 +68,7 @@ export class MundoTeste {
   _chao(scene) {
     const chao = B.MeshBuilder.CreateGround('chao', { width: TAMANHO, height: TAMANHO }, scene);
     const tex = new B.DynamicTexture('tex-chao', { width: PX, height: PX }, scene, true);
-    tex.anisotropicFilteringLevel = 8;
+    tex.anisotropicFilteringLevel = 16;
     const ctx = tex.getContext();
     const m = (v) => (v + TAMANHO / 2) * ESCALA;   // metros -> pixels
     const s = (v) => v * ESCALA;                    // tamanho em metros -> pixels
@@ -77,7 +77,7 @@ export class MundoTeste {
     // grama com manchas
     ctx.fillStyle = '#5e8f3e';
     ctx.fillRect(0, 0, PX, PX);
-    for (let i = 0; i < 9000; i++) {
+    for (let i = 0; i < 30000; i++) {
       ctx.fillStyle = rnd() < 0.5 ? 'rgba(80,120,50,.35)' : 'rgba(120,160,70,.3)';
       const t = 2 + rnd() * 6;
       ctx.fillRect(rnd() * PX, rnd() * PX, t, t);
