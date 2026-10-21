@@ -2,17 +2,111 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1b2430">
   <title>Jogo do Caminhão</title>
-  <style>
-    html, body { margin: 0; height: 100%; background: #1d6fa5; color: #fff;
-      font-family: system-ui, sans-serif; display: grid; place-items: center; text-align: center; }
-  </style>
+  <link rel="stylesheet" href="src/estilo.css">
 </head>
 <body>
-  <div>
-    <div style="font-size:72px">🚚</div>
-    <p>Em construção. A etapa 1 chega em breve.</p>
+  <!-- Onde o mundo 3D é desenhado -->
+  <canvas id="tela-jogo"></canvas>
+
+  <!-- Botões por cima do jogo -->
+  <div id="hud" class="escondido">
+    <div id="topo">
+      <button id="btn-config" class="btn-topo" aria-label="Configurações">
+        <svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8.4 4.6-.1-1.1 2-1.6-2-3.4-2.4.9-.9-.6-.4-2.5h-3.9l-.4 2.5-.9.6-2.4-.9-2 3.4 2 1.6-.1 1.1.1 1.1-2 1.6 2 3.4 2.4-.9.9.6.4 2.5h3.9l.4-2.5.9-.6 2.4.9 2-3.4-2-1.6.1-1.1Z" fill="currentColor"/></svg>
+      </button>
+      <button id="btn-estrada" class="btn-topo" aria-label="Voltar para a estrada">
+        <svg viewBox="0 0 24 24"><path d="M9 3h2l-1 18H5L9 3Zm4 0h2l4 18h-5l-1-18Zm-1.5 2h1v3h-1V5Zm0 5h1v3h-1v-3Zm0 5h1v4h-1v-4Z" fill="currentColor"/></svg>
+      </button>
+      <div id="velocimetro"><span id="vel">0</span><small>km/h</small></div>
+    </div>
+
+    <!-- Lado esquerdo: direção -->
+    <div id="lado-esquerdo">
+      <button id="btn-esq" class="seta" aria-label="Virar para a esquerda">
+        <svg viewBox="0 0 24 24"><path d="M15.5 3.5 6 12l9.5 8.5V3.5Z" fill="currentColor"/></svg>
+      </button>
+      <button id="btn-dir" class="seta" aria-label="Virar para a direita">
+        <svg viewBox="0 0 24 24"><path d="M8.5 3.5 18 12l-9.5 8.5V3.5Z" fill="currentColor"/></svg>
+      </button>
+      <div id="indicador-inclinacao" class="escondido" aria-hidden="true">
+        <div id="volante">
+          <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="10"/><circle cx="50" cy="50" r="9" fill="currentColor"/><path d="M14 50h27M59 50h27M50 59v31" stroke="currentColor" stroke-width="10" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Centro: buzina -->
+    <button id="btn-buzina" aria-label="Buzina">
+      <svg viewBox="0 0 24 24"><path d="M3 9h4l7-5v16l-7-5H3V9Zm14.5-1.5a6 6 0 0 1 0 9M16 10a2.5 2.5 0 0 1 0 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+
+    <!-- Lado direito: câmbio e pedais -->
+    <div id="lado-direito">
+      <div id="cambio" aria-label="Câmbio">
+        <button class="marcha" data-marcha="D" aria-label="Para frente">D</button>
+        <button class="marcha" data-marcha="R" aria-label="Ré">R</button>
+        <div id="trilho-cambio"><div id="manopla"></div></div>
+      </div>
+      <button id="btn-freio" class="pedal" aria-label="Freio"></button>
+      <button id="btn-acelerador" class="pedal" aria-label="Acelerador"></button>
+    </div>
   </div>
+
+  <!-- Tela inicial: o toque inicial libera tela cheia, som e sensores -->
+  <div id="tela-inicio">
+    <button id="btn-jogar" aria-label="Jogar">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5Z" fill="currentColor"/></svg>
+    </button>
+  </div>
+
+  <!-- Configurações (para o pai) -->
+  <div id="painel-config" class="escondido">
+    <div class="cartao">
+      <button id="btn-fechar-config" class="btn-fechar" aria-label="Fechar">✕</button>
+      <div class="linha-config">
+        <span class="rotulo">Direção</span>
+        <button class="opcao" data-modo="setas">
+          <svg viewBox="0 0 24 24"><path d="M10 5 3 12l7 7V5Zm4 0 7 7-7 7V5Z" fill="currentColor"/></svg>
+          <span>Setas</span>
+        </button>
+        <button class="opcao" data-modo="inclinacao">
+          <svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="10" rx="2" transform="rotate(-18 12 12)" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <span>Inclinar</span>
+        </button>
+      </div>
+      <div class="linha-config">
+        <span class="rotulo">Acelerador automático</span>
+        <button class="opcao" data-auto="nao"><span>Desligado</span></button>
+        <button class="opcao" data-auto="sim"><span>Ligado</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aparece quando o celular está em pé -->
+  <div id="aviso-girar">
+    <svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 15a8 8 0 0 1-6 6l1.5-2.5M14 21l2.5 1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    <p>Gire o celular</p>
+  </div>
+
+  <!-- Mostra erros na tela, para você me mandar um print -->
+  <div id="caixa-erro" class="escondido"></div>
+
+  <script>
+    window.addEventListener('error', function (e) {
+      var caixa = document.getElementById('caixa-erro');
+      caixa.textContent = 'Erro: ' + e.message + ' (' + (e.filename || '').split('/').pop() + ':' + e.lineno + ')';
+      caixa.classList.remove('escondido');
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      var caixa = document.getElementById('caixa-erro');
+      caixa.textContent = 'Erro: ' + (e.reason && e.reason.message || e.reason);
+      caixa.classList.remove('escondido');
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/babylonjs@9.31.2/babylon.js"></script>
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>

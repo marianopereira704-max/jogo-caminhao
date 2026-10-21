@@ -1,0 +1,155 @@
+/* ===== Base ===== */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; width: 100%; height: 100%; overflow: hidden;
+  background: #1b2430; color: #fff;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  overscroll-behavior: none;
+}
+#tela-jogo { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
+button {
+  font: inherit; color: inherit; border: 0; padding: 0; margin: 0;
+  background: none; cursor: pointer; touch-action: none;
+}
+svg { display: block; width: 100%; height: 100%; pointer-events: none; }
+.escondido { display: none !important; }
+
+/* ===== HUD ===== */
+#hud {
+  position: fixed; inset: 0; pointer-events: none;
+  padding: max(3vh, env(safe-area-inset-top)) max(3vh, env(safe-area-inset-right))
+           max(3vh, env(safe-area-inset-bottom)) max(3vh, env(safe-area-inset-left));
+}
+#hud button { pointer-events: auto; }
+
+/* Topo: botões menores */
+#topo { position: absolute; top: max(3vh, env(safe-area-inset-top)); left: 0; right: 0;
+  display: flex; justify-content: center; align-items: center; gap: 3vh; }
+.btn-topo {
+  width: 15vh; height: 15vh; min-width: 56px; min-height: 56px;
+  border-radius: 50%; padding: 3.2vh;
+  background: rgba(20, 28, 38, .55); border: 2px solid rgba(255,255,255,.35);
+}
+.btn-topo:active, .btn-topo.ativo { background: rgba(255,255,255,.3); }
+#velocimetro {
+  min-width: 22vh; height: 15vh; padding: 0 2vh; border-radius: 4vh;
+  background: rgba(20, 28, 38, .55); border: 2px solid rgba(255,255,255,.35);
+  display: flex; align-items: baseline; justify-content: center; gap: 1vh;
+}
+#velocimetro span { font-size: 8vh; font-weight: 700; line-height: 15vh; font-variant-numeric: tabular-nums; }
+#velocimetro small { font-size: 3.5vh; opacity: .8; }
+
+/* Esquerda: setas */
+#lado-esquerdo { position: absolute; left: max(4vh, env(safe-area-inset-left)); bottom: max(5vh, env(safe-area-inset-bottom));
+  display: flex; gap: 5vh; align-items: flex-end; }
+.seta {
+  width: 32vh; height: 32vh; min-width: 110px; min-height: 110px;
+  border-radius: 6vh; padding: 6vh;
+  background: rgba(20, 28, 38, .55); border: 3px solid rgba(255,255,255,.45);
+  transition: transform .06s, background .06s;
+}
+.seta.apertado { background: rgba(255, 200, 40, .75); transform: scale(.94); color: #1b2430; }
+
+/* Indicador do modo inclinação */
+#indicador-inclinacao { width: 36vh; height: 36vh; min-width: 120px; min-height: 120px; opacity: .85; }
+#volante { width: 100%; height: 100%; transition: transform .08s linear; }
+
+/* Centro: buzina */
+#btn-buzina {
+  position: absolute; left: 50%; bottom: max(5vh, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: 26vh; height: 26vh; min-width: 96px; min-height: 96px;
+  border-radius: 50%; padding: 6vh;
+  background: rgba(30, 110, 200, .75); border: 3px solid rgba(255,255,255,.6);
+}
+#btn-buzina.apertado { background: rgba(255, 200, 40, .9); color: #1b2430; transform: translateX(-50%) scale(.93); }
+
+/* Direita: câmbio e pedais */
+#lado-direito { position: absolute; right: max(4vh, env(safe-area-inset-right)); bottom: max(5vh, env(safe-area-inset-bottom));
+  display: flex; gap: 4vh; align-items: flex-end; }
+
+#cambio {
+  position: relative; width: 16vh; height: 46vh; min-width: 60px; min-height: 160px;
+  border-radius: 5vh; background: rgba(20, 28, 38, .7); border: 3px solid rgba(255,255,255,.45);
+  overflow: hidden;
+}
+.marcha {
+  position: absolute; left: 0; right: 0; height: 50%; z-index: 2;
+  font-size: 9vh; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,.55);
+}
+.marcha[data-marcha="D"] { top: 0; }
+.marcha[data-marcha="R"] { bottom: 0; }
+.marcha.selecionada { color: #fff; }
+#trilho-cambio { position: absolute; inset: 0; pointer-events: none; }
+#manopla {
+  position: absolute; left: 1.2vh; right: 1.2vh; height: calc(50% - 2.4vh); top: 1.2vh;
+  border-radius: 3.6vh; background: rgba(40, 170, 90, .85);
+  transition: top .25s ease, background .25s;
+}
+#cambio.re #manopla { top: calc(50% + 1.2vh); background: rgba(220, 70, 50, .85); }
+#cambio.trocando #manopla { animation: piscar .4s infinite alternate; }
+@keyframes piscar { from { opacity: 1; } to { opacity: .35; } }
+
+.pedal {
+  border-radius: 3vh; border: 3px solid rgba(255,255,255,.55);
+  /* frisos de borracha do pedal */
+  background-image: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1.4vh, transparent 1.4vh 3.6vh);
+  transition: transform .06s;
+  transform-origin: 50% 100%;
+}
+#btn-freio { width: 26vh; height: 30vh; min-width: 96px; min-height: 104px; background-color: rgba(200, 55, 45, .85); }
+#btn-acelerador { width: 18vh; height: 46vh; min-width: 66px; min-height: 160px; background-color: rgba(40, 160, 80, .85); }
+.pedal.apertado { transform: scaleY(.9); filter: brightness(1.25); }
+#btn-acelerador.automatico { opacity: .45; }
+
+/* ===== Tela inicial ===== */
+#tela-inicio {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 40%, #2d6f9e, #1b2430 70%);
+}
+#btn-jogar {
+  width: 40vmin; height: 40vmin; border-radius: 50%; padding: 9vmin 7vmin 9vmin 11vmin;
+  background: #f5b82e; color: #1b2430; box-shadow: 0 1vmin 0 #b9841a;
+  animation: pulsar 1.2s ease-in-out infinite;
+}
+@keyframes pulsar { 50% { transform: scale(1.07); } }
+
+/* ===== Configurações ===== */
+#painel-config {
+  position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center;
+}
+.cartao {
+  position: relative; background: #243243; border-radius: 4vh; padding: 15vh 6vh 5vh;
+  display: flex; flex-direction: column; gap: 4vh; border: 2px solid rgba(255,255,255,.2);
+}
+.btn-fechar { position: absolute; top: 2vh; right: 2vh; width: 11vh; height: 11vh; font-size: 6vh; border-radius: 50%; background: rgba(255,255,255,.12); }
+.linha-config { display: flex; align-items: center; gap: 3vh; }
+.rotulo { width: 34vh; font-size: 4.5vh; opacity: .85; }
+.opcao {
+  min-width: 28vh; height: 18vh; border-radius: 3vh; padding: 2vh 3vh;
+  background: rgba(255,255,255,.1); border: 3px solid transparent;
+  display: flex; align-items: center; gap: 2vh; font-size: 4.5vh; font-weight: 600;
+}
+.opcao svg { width: 9vh; height: 9vh; flex: none; }
+.opcao.selecionada { border-color: #f5b82e; background: rgba(245,184,46,.2); }
+
+/* ===== Aviso de girar o celular ===== */
+#aviso-girar {
+  position: fixed; inset: 0; z-index: 30; display: none;
+  flex-direction: column; align-items: center; justify-content: center; gap: 4vw;
+  background: #1b2430; font-size: 6vw;
+}
+#aviso-girar svg { width: 30vw; height: 30vw; animation: girar 2s ease-in-out infinite; }
+@keyframes girar { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+@media (orientation: portrait) { #aviso-girar { display: flex; } }
+
+/* ===== Erros ===== */
+#caixa-erro {
+  position: fixed; left: 2vh; bottom: 2vh; z-index: 40; max-width: 60vw;
+  background: #b3261e; color: #fff; padding: 1.5vh 2vh; border-radius: 1.5vh; font-size: 3.2vh;
+}
