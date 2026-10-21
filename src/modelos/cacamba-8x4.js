@@ -3,7 +3,8 @@
 // O caminhão aponta para +z (frente), +x é o lado direito, y é para cima.
 // Medidas em metros, próximas das reais (~10,4 m de comprimento).
 
-import { caixaArredondada, pneu as formaPneu, aro as formaAro } from './formas.js';
+import { caixaArredondada } from './formas.js';
+import { montarRoda, raioDaRoda, reflexoRodas } from './rodas.js';
 
 const B = window.BABYLON;
 
@@ -63,10 +64,13 @@ export function montarCacamba8x4(scene) {
   mZebra.specularColor = new B.Color3(0.2, 0.2, 0.2);
 
   const raiz = new B.TransformNode('caminhao-8x4', scene);
+  // "corpo" = tudo menos as rodas; sobe quando a roda é maior (ex.: monstro)
+  const corpo = new B.TransformNode('corpo', scene);
+  corpo.parent = raiz;
   const partes = [];
 
   // r = raio das bordas. Sem r, arredonda só um pouquinho (nada de canto vivo).
-  const caixa = (larg, alt, prof, x, y, z, m, pai = raiz, nome = 'peca', r = null) => {
+  const caixa = (larg, alt, prof, x, y, z, m, pai = corpo, nome = 'peca', r = null) => {
     const raio = r ?? Math.min(0.03, 0.3 * Math.min(larg, alt, prof));
     const p = caixaArredondada(nome, larg, alt, prof, raio, scene, raio > 0.06 ? 4 : 2);
     p.position.set(x, y, z);
@@ -76,7 +80,7 @@ export function montarCacamba8x4(scene) {
     return p;
   };
   // cilindro com o eixo na direção indicada ('x' = de lado, 'z' = para frente)
-  const cilindro = (diam, comp, x, y, z, m, eixo = 'z', pai = raiz, lados = 20, nome = 'cil') => {
+  const cilindro = (diam, comp, x, y, z, m, eixo = 'z', pai = corpo, lados = 20, nome = 'cil') => {
     const p = B.MeshBuilder.CreateCylinder(nome, { diameter: diam, height: comp, tessellation: lados }, scene);
     if (eixo === 'z') p.rotation.x = Math.PI / 2;
     if (eixo === 'x') p.rotation.z = Math.PI / 2;
@@ -93,21 +97,21 @@ export function montarCacamba8x4(scene) {
   for (const z of [4.6, 3.0, 1.2, -0.6, -2.9, -4.8]) caixa(0.92, 0.18, 0.12, 0, 1.05, z, M.pretoFosco);
 
   // tanque de combustível (lado esquerdo) e caixa de baterias (lado direito)
-  cilindro(0.6, 1.15, -1.0, 1.05, 0.45, M.tanque, 'z', raiz, 20);
+  cilindro(0.6, 1.15, -1.0, 1.05, 0.45, M.tanque, 'z', corpo, 20);
   caixa(0.06, 0.62, 0.06, -0.78, 1.05, 0.0, M.pretoFosco);
   caixa(0.06, 0.62, 0.06, -0.78, 1.05, 0.9, M.pretoFosco);
   caixa(0.5, 0.5, 0.75, 0.98, 1.0, 0.45, M.preto);
-  cilindro(0.32, 1.0, 0.95, 0.72, -0.9, M.cinza, 'z', raiz, 14); // tanque de ar
+  cilindro(0.32, 1.0, 0.95, 0.72, -0.9, M.cinza, 'z', corpo, 14); // tanque de ar
 
   // =================== CABINE ===================
   const cab = { z: 4.0, base: 1.05, alt: 2.05, prof: 2.1 };
   const yc = cab.base + cab.alt / 2;
-  caixa(2.45, cab.alt, cab.prof, 0, yc, cab.z, M.pinturaCabine, raiz, 'cabine', 0.2);
+  caixa(2.45, cab.alt, cab.prof, 0, yc, cab.z, M.pinturaCabine, corpo, 'cabine', 0.2);
   // teto / defletor preto
-  caixa(2.38, 0.34, 2.02, 0, cab.base + cab.alt + 0.1, cab.z - 0.02, M.preto, raiz, 'teto', 0.15);
-  caixa(2.3, 0.12, 0.34, 0, cab.base + cab.alt + 0.2, cab.z + 1.1, M.preto, raiz, 'pala', 0.06);
+  caixa(2.38, 0.34, 2.02, 0, cab.base + cab.alt + 0.1, cab.z - 0.02, M.preto, corpo, 'teto', 0.15);
+  caixa(2.3, 0.12, 0.34, 0, cab.base + cab.alt + 0.2, cab.z + 1.1, M.preto, corpo, 'pala', 0.06);
   // para-brisa e quebra-sol
-  caixa(2.16, 0.74, 0.06, 0, 2.62, 5.05, M.vidro, raiz, 'parabrisa', 0.03);
+  caixa(2.16, 0.74, 0.06, 0, 2.62, 5.05, M.vidro, corpo, 'parabrisa', 0.03);
   caixa(2.1, 0.1, 0.06, 0, 3.01, 5.07, M.preto);
   caixa(2.2, 0.05, 0.05, 0, 2.24, 5.09, M.preto);                           // borracha do vidro
   espelhar((s) => { const l = caixa(0.03, 0.45, 0.03, s * 0.35, 2.4, 5.1, M.pretoFosco); l.rotation.z = s * 1.2; }); // limpadores
@@ -118,21 +122,21 @@ export function montarCacamba8x4(scene) {
     f.rotation.z = -s * 0.12;
   });
   // grade com frisos
-  caixa(1.42, 0.72, 0.08, 0, 1.72, 5.06, M.preto, raiz, 'grade', 0.05);
+  caixa(1.42, 0.72, 0.08, 0, 1.72, 5.06, M.preto, corpo, 'grade', 0.05);
   for (let i = 0; i < 4; i++) caixa(1.32, 0.05, 0.04, 0, 1.47 + i * 0.17, 5.1, M.cinza);
   // faróis redondos
   espelhar((s) => {
-    cilindro(0.38, 0.05, s * 0.95, 1.72, 5.07, M.preto, 'z', raiz, 24);
-    const f = cilindro(0.27, 0.06, s * 0.95, 1.72, 5.09, M.farol, 'z', raiz, 24, 'farol');
+    cilindro(0.38, 0.05, s * 0.95, 1.72, 5.07, M.preto, 'z', corpo, 24);
+    const f = cilindro(0.27, 0.06, s * 0.95, 1.72, 5.09, M.farol, 'z', corpo, 24, 'farol');
     f.metadata = { farol: true };
     caixa(0.06, 0.18, 0.04, s * 1.2, 1.72, 5.07, M.pisca);
   });
   // para-choque preto grande, com faróis de neblina
-  caixa(2.5, 0.72, 0.4, 0, 1.0, 5.08, M.preto, raiz, 'parachoque', 0.12);
+  caixa(2.5, 0.72, 0.4, 0, 1.0, 5.08, M.preto, corpo, 'parachoque', 0.12);
   caixa(0.7, 0.16, 0.04, 0, 1.12, 5.29, M.pretoFosco);
   espelhar((s) => {
-    cilindro(0.24, 0.05, s * 0.92, 1.12, 5.28, M.pretoFosco, 'z', raiz, 20);
-    cilindro(0.18, 0.06, s * 0.92, 1.12, 5.29, M.farol, 'z', raiz, 20);
+    cilindro(0.24, 0.05, s * 0.92, 1.12, 5.28, M.pretoFosco, 'z', corpo, 20);
+    cilindro(0.18, 0.06, s * 0.92, 1.12, 5.29, M.farol, 'z', corpo, 20);
   });
   // laterais da cabine
   espelhar((s) => {
@@ -145,21 +149,21 @@ export function montarCacamba8x4(scene) {
     caixa(0.05, 0.05, 0.22, s * 1.25, 2.18, 3.75, M.cinza);       // maçaneta
     const lr = caixa(0.05, 0.07, 0.8, xl, 1.72, 3.55, M.laranja); // detalhe laranja
     lr.rotation.x = 0.35;
-    caixa(0.5, 0.06, 0.4, s * 1.05, 0.72, 4.4, M.preto);         // degrau
-    caixa(0.5, 0.06, 0.4, s * 1.05, 0.38, 4.4, M.preto);
+    caixa(0.42, 0.06, 0.4, s * 1.06, 0.74, 3.3, M.preto);        // degraus (atrás da roda dianteira)
+    caixa(0.42, 0.06, 0.4, s * 1.06, 0.4, 3.3, M.preto);
     caixa(0.14, 0.08, 1.15, s * 1.16, 1.14, 4.1, M.preto);        // para-lama dianteiro
     // retrovisores
     caixa(0.32, 0.05, 0.05, s * 1.38, 2.95, 4.98, M.preto);
     caixa(0.05, 0.62, 0.05, s * 1.52, 2.7, 4.98, M.preto);
-    caixa(0.12, 0.56, 0.3, s * 1.6, 2.62, 4.98, M.preto, raiz, 'retrovisor', 0.05);
-    caixa(0.12, 0.26, 0.24, s * 1.6, 2.2, 4.98, M.preto, raiz, 'retrovisor', 0.05);
+    caixa(0.12, 0.56, 0.3, s * 1.6, 2.62, 4.98, M.preto, corpo, 'retrovisor', 0.05);
+    caixa(0.12, 0.26, 0.24, s * 1.6, 2.2, 4.98, M.preto, corpo, 'retrovisor', 0.05);
     caixa(0.02, 0.48, 0.24, s * 1.67, 2.62, 4.98, M.vidro);
   });
 
 
   // =================== CAÇAMBA (gira na dobradiça traseira) ===================
   const cacPivo = new B.TransformNode('cacamba-pivo', scene);
-  cacPivo.parent = raiz;
+  cacPivo.parent = corpo;
   cacPivo.position.set(0, 1.42, -4.85);
   const L = 6.75;         // comprimento
   const H = 1.32;         // altura das laterais
@@ -194,8 +198,8 @@ export function montarCacamba8x4(scene) {
 
   // pistão hidráulico (estica quando a caçamba levanta)
   const pistaoBase = new B.Vector3(0, 1.2, 1.55);
-  const pistao = cilindro(0.2, 1, 0, 0, 0, M.prata, 'y', raiz, 14, 'pistao');
-  const pistaoCamisa = cilindro(0.28, 0.7, 0, 0, 0, M.pretoFosco, 'y', raiz, 14, 'pistao-camisa');
+  const pistao = cilindro(0.2, 1, 0, 0, 0, M.prata, 'y', corpo, 14, 'pistao');
+  const pistaoCamisa = cilindro(0.28, 0.7, 0, 0, 0, M.pretoFosco, 'y', corpo, 14, 'pistao-camisa');
   const pontoNaCacamba = new B.Vector3(0, -0.15, 6.15); // em relação à dobradiça
 
   // =================== TRASEIRA DO CHASSI ===================
@@ -206,60 +210,44 @@ export function montarCacamba8x4(scene) {
   caixa(2.3, 0.22, 0.12, 0, 0.55, -5.12, mZebra);                  // para-choque zebrado
 
   // =================== RODAS ===================
-  const R = MEDIDAS.raioRoda;
+  // Cada roda tem um pivô (vira com o volante) e um "giro" (gira andando).
+  // O desenho da roda é trocável: veja rodas.js.
   const rodasDianteiras = [];
-  const giros = [];
-  const pneus = [];
-  const aros = [];
-  const roda = (lado, z, dianteira) => {
+  const vagas = [];
+  let tipoRoda = 'aluminio';
+  let R = raioDaRoda(tipoRoda);
+  let sombrasGerador = null;
+  const vaga = (lado, z, dianteira) => {
     const pivo = new B.TransformNode('pivo-roda', scene);
     pivo.parent = raiz;
     pivo.position.set(lado * (dianteira ? 1.04 : 0.93), R, z);
     const giro = new B.TransformNode('giro-roda', scene);
     giro.parent = pivo;
-    const larg = dianteira ? 0.36 : 0.68;
-    const face = lado * (larg / 2);
-    if (dianteira) {
-      const p = formaPneu('pneu', R, larg, scene); p.parent = giro; p.material = M.pneu; partes.push(p); pneus.push(p);
-    } else {
-      // rodado duplo: dois pneus lado a lado
-      for (const d of [-1, 1]) {
-        const p = formaPneu('pneu', R, larg * 0.49, scene);
-        p.position.x = d * larg * 0.255; p.parent = giro; p.material = M.pneu; partes.push(p); pneus.push(p);
-      }
-    }
-    // sulcos da banda de rodagem
-    for (const off of [-0.25, 0, 0.25]) {
-      const sulco = B.MeshBuilder.CreateTorus('sulco', { diameter: R * 2 - 0.004, thickness: 0.018, tessellation: 32 }, scene);
-      sulco.rotation.z = Math.PI / 2;
-      sulco.position.x = off * larg;
-      sulco.material = M.pretoFosco; sulco.parent = giro; partes.push(sulco);
-    }
-    // aro de alumínio em prato, cubo e porcas
-    const a = formaAro('aro', R * 0.62, lado, scene);
-    a.position.x = face - lado * 0.06; a.parent = giro; a.material = M.prata; partes.push(a); aros.push(a);
-    cilindro(0.3, 0.12, face - lado * 0.01, 0, 0, M.prata, 'x', giro, 20, 'cubo');
-    cilindro(0.16, 0.05, face + lado * 0.05, 0, 0, M.cinza, 'x', giro, 16, 'tampa-cubo');
-    for (let i = 0; i < 10; i++) {
-      const ang = (i / 10) * Math.PI * 2;
-      cilindro(0.04, 0.05, face + lado * 0.04, Math.sin(ang) * 0.115, Math.cos(ang) * 0.115, M.cinza, 'x', giro, 6, 'porca');
-    }
-    for (let i = 0; i < 8; i++) {                                        // furos do aro
-      const ang = (i / 8) * Math.PI * 2 + 0.2;
-      cilindro(0.085, 0.06, face - lado * 0.035, Math.sin(ang) * 0.24, Math.cos(ang) * 0.24, M.pretoFosco, 'x', giro, 10, 'furo');
-    }
-    giros.push(giro);
+    vagas.push({ pivo, giro, lado, dianteira, larg: dianteira ? 0.36 : 0.68, roda: null });
     if (dianteira) rodasDianteiras.push({ pivo, fator: z > 3 ? 1 : 0.65 }); // 2º eixo vira menos
   };
-  for (const z of MEDIDAS.eixos) espelhar((s) => roda(s, z, z > 0));
+  for (const z of MEDIDAS.eixos) espelhar((s) => vaga(s, z, z > 0));
+  const montarRodas = (tipo) => {
+    tipoRoda = tipo;
+    R = raioDaRoda(tipo);
+    corpo.position.y = R - MEDIDAS.raioRoda;
+    for (const v of vagas) {
+      if (v.roda) v.roda.descartar();
+      v.pivo.position.y = R;
+      v.roda = montarRoda(tipo, { scene, giro: v.giro, lado: v.lado, larg: v.larg, dupla: !v.dianteira });
+      if (sombrasGerador) for (const p of v.roda.partes) sombrasGerador.addShadowCaster(p);
+    }
+  };
+  montarRodas(tipoRoda);
   // para-lamas traseiros
   espelhar((s) => caixa(0.72, 0.06, 2.3, s * 0.95, 1.22, -3.02, M.preto));
 
   // ======== animação da caçamba ========
   let anguloCacamba = 0;
+  let tempo = 0;
   const atualizarPistao = () => {
     const topo = B.Vector3.TransformCoordinates(pontoNaCacamba, cacPivo.computeWorldMatrix(true)
-      .multiply(B.Matrix.Invert(raiz.computeWorldMatrix(true))));
+      .multiply(B.Matrix.Invert(corpo.computeWorldMatrix(true))));
     const dir = topo.subtract(pistaoBase);
     const comp = dir.length();
     const meio = pistaoBase.add(dir.scale(0.5));
@@ -276,11 +264,17 @@ export function montarCacamba8x4(scene) {
     raiz,
     partes,
     materiais: M,
-    giros,
+    corpo,
     rodasDianteiras,
-    pneus,
-    aros,
-    raioRoda: R,
+    get raioRoda() { return R; },
+    get tipoRoda() { return tipoRoda; },
+    definirRodas(tipo) { if (tipo !== tipoRoda) montarRodas(tipo); },
+    // passa a projetar sombra (inclusive das rodas que forem trocadas depois)
+    usarSombras(gerador) {
+      sombrasGerador = gerador;
+      for (const p of partes) gerador.addShadowCaster(p);
+      for (const v of vagas) for (const p of v.roda.partes) gerador.addShadowCaster(p);
+    },
     // 0 = abaixada, 1 = toda levantada (~48 graus)
     definirCacamba(fracao) {
       anguloCacamba = Math.max(0, Math.min(1, fracao)) * 0.84;
@@ -305,6 +299,7 @@ export function montarCacamba8x4(scene) {
       usar(M.vidro, 0.9, 0.3);
       usar(M.prata, 0.75, 0.45);
       usar(M.tanque, 0.6, 0.3);
+      reflexoRodas(scene, textura);
     },
     definirCor(hex) {
       M.pinturaCabine.diffuseColor = B.Color3.FromHexString(hex);
@@ -315,8 +310,12 @@ export function montarCacamba8x4(scene) {
       M.lanterna.emissiveColor = B.Color3.FromHexString(ligados ? '#ff2a2a' : '#3a0405');
     },
     // anima as rodas: distância andada (m) e posição do volante (-1 a 1)
-    animarRodas(distancia, volante) {
-      for (const g of giros) g.rotation.x += distancia / R;
+    animarRodas(distancia, volante, dt = 1 / 30) {
+      tempo += dt;
+      for (const v of vagas) {
+        v.giro.rotation.x += distancia / R;
+        v.roda.atualizar(distancia / Math.max(dt, 0.001), dt, tempo);
+      }
       for (const r of rodasDianteiras) r.pivo.rotation.y = volante * 0.5 * r.fator;
     },
   };

@@ -51,9 +51,10 @@ export class Garagem {
     // ---- caminhão ----
     this.modelo = montarCacamba8x4(scene);
     this.modelo.raiz.parent = this.tablado;
-    for (const p of this.modelo.partes) sombras.addShadowCaster(p);
+    this.modelo.usarSombras(sombras);
     this.modelo.definirReflexo(criarReflexo(scene, [ceu, chao]));
     this.modelo.definirCor(this.pref.cor);
+    this.modelo.definirRodas(this.pref.roda);
 
     // ---- câmera: gira sozinha devagar; o dedo também gira ----
     this.cam = new B.ArcRotateCamera('cam', Math.PI * 0.72, 1.25, 15.5, new B.Vector3(0, 1.3, 0), scene);
@@ -134,6 +135,7 @@ export class Garagem {
 
   atualizar(dt) {
     this.tempo += dt;
+    this.modelo.animarRodas(0, 0, dt);
     // gira sozinha se ninguém mexeu nos últimos 4 segundos
     if (this.tempo - this.ultimoToque > 4) this.cam.alpha += dt * 0.25;
     const atual = this.modelo.cacamba;

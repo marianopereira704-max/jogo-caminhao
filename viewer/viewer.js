@@ -43,7 +43,7 @@ ceu.infiniteDistance = true;
 
 // ----- caminhão -----
 const modelo = montarCacamba8x4(scene);
-for (const p of modelo.partes) sombras.addShadowCaster(p);
+modelo.usarSombras(sombras);
 
 // "foto" do ambiente em volta, tirada uma vez, para os reflexos
 const sonda = new B.ReflectionProbe('sonda', 128, scene);
@@ -69,12 +69,13 @@ const vistas = {
   frente:  { a: Math.PI / 2, b: 1.45, r: 10 },
   tras:    { a: -Math.PI / 2, b: 1.35, r: 12 },
   cima:    { a: Math.PI * 0.72, b: 0.15, r: 20 },
+  roda:    { a: Math.PI * 0.92, b: 1.42, r: 4.2, alvo: [-1.1, 0.7, 4.1] },
 };
 let animVista = null;
 for (const el of document.querySelectorAll('[data-vista]')) {
   el.addEventListener('click', () => {
     const v = vistas[el.dataset.vista];
-    animVista = { de: { a: cam.alpha, b: cam.beta, r: cam.radius }, para: v, t: 0 };
+    animVista = { de: { a: cam.alpha, b: cam.beta, r: cam.radius, alvo: cam.target.clone() }, para: v, alvoPara: new B.Vector3(...(v.alvo || [0, 1.6, 0])), t: 0 };
   });
 }
 
@@ -92,6 +93,21 @@ cores.forEach((c, i) => {
   });
   caixaCores.appendChild(b);
 });
+
+// ----- rodas -----
+const nomesRodas = { aluminio: 'Alumínio', madeira: 'Madeira', engrenagem: 'Engrenagem', dourada: 'Dourada', fogo: 'Fogo', monstro: 'Monstro' };
+const caixaRodas = document.getElementById('rodas');
+for (const [id, nome] of Object.entries(nomesRodas)) {
+  const b = document.createElement('button');
+  b.textContent = nome;
+  b.dataset.roda = id;
+  if (id === 'aluminio') b.classList.add('ativo');
+  b.addEventListener('click', () => {
+    modelo.definirRodas(id);
+    for (const o of caixaRodas.children) o.classList.toggle('ativo', o === b);
+  });
+  caixaRodas.appendChild(b);
+}
 
 // ----- botões -----
 let alvoCacamba = 0;
@@ -136,12 +152,13 @@ engine.runRenderLoop(() => {
   if (Math.abs(atual - alvoCacamba) > 0.001) {
     modelo.definirCacamba(atual + Math.sign(alvoCacamba - atual) * Math.min(Math.abs(alvoCacamba - atual), dt * 0.25));
   }
-  if (rodando) modelo.animarRodas(dt * 3, Math.sin(tempo * 1.2));
+  modelo.animarRodas(rodando ? dt * 3 : 0, rodando ? Math.sin(tempo * 1.2) : 0, dt);
 
   if (animVista) {
     animVista.t = Math.min(1, animVista.t + dt * 1.6);
     const k = 1 - Math.pow(1 - animVista.t, 3);
     const { de, para } = animVista;
+    cam.target = B.Vector3.Lerp(de.alvo, animVista.alvoPara, k); // primeiro o alvo (ele recalcula os ângulos)
     cam.alpha = de.a + (para.a - de.a) * k;
     cam.beta = de.b + (para.b - de.b) * k;
     cam.radius = de.r + (para.r - de.r) * k;

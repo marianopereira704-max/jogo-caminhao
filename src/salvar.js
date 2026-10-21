@@ -6,6 +6,7 @@ const PADRAO = {
   modoDirecao: 'setas',      // 'setas' ou 'inclinacao'
   aceleradorAuto: false,
   cor: '#f4f5f2',             // pintura do caminhão
+  roda: 'aluminio',          // modelo de roda (veja modelos/rodas.js)
 };
 
 export function carregar() {

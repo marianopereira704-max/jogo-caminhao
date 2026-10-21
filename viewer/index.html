@@ -19,7 +19,7 @@
     button.ativo { background: #f5b82e; color: #1b2430; border-color: #f5b82e; }
     .cor { width: 40px; height: 40px; padding: 0; border-radius: 50%; border: 3px solid rgba(255,255,255,.6); }
     .cor.ativo { border-color: #f5b82e; transform: scale(1.15); }
-    #titulo { position: fixed; top: 64px; left: 12px; font-size: 13px; opacity: .75; pointer-events: none; }
+    #titulo { position: fixed; top: 112px; left: 12px; font-size: 13px; opacity: .75; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -30,7 +30,9 @@
     <button data-vista="frente">Frente</button>
     <button data-vista="tras">Traseira</button>
     <button data-vista="cima">Cima</button>
+    <button data-vista="roda">Roda</button>
   </div>
+  <div class="barra" id="rodas" style="top:56px"></div>
   <div id="titulo">Caçamba 8x4 · arraste para girar, pinça para aproximar</div>
   <div class="barra baixo">
     <div id="cores" style="display:flex;gap:8px;align-items:center"></div>

@@ -10,7 +10,7 @@ export class Caminhao {
     this.scene = scene;
     this.modelo = montarCacamba8x4(scene);
     this.raiz = this.modelo.raiz;
-    for (const p of this.modelo.partes) sombras.addShadowCaster(p);
+    this.modelo.usarSombras(sombras);
 
     this.velocidade = 0;          // m/s (negativo = ré)
     this.direcaoSuave = 0;        // posição atual do volante (-1 a 1)
@@ -28,6 +28,7 @@ export class Caminhao {
 
   aplicarVisual(pref) {
     this.modelo.definirCor(pref.cor);
+    this.modelo.definirRodas(pref.roda);
   }
 
   colocarEm(x, z, angulo) {
@@ -110,7 +111,7 @@ export class Caminhao {
     }
 
     // ---- animações ----
-    this.modelo.animarRodas(this.velocidade * dt, this.direcaoSuave);
+    this.modelo.animarRodas(this.velocidade * dt, this.direcaoSuave, dt);
     const atual = this.modelo.cacamba;
     if (this.cacambaMexendo) {
       const falta = this.alvoCacamba - atual;
