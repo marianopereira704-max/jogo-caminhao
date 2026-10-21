@@ -3,6 +3,8 @@
 // O caminhão aponta para +z (frente), +x é o lado direito, y é para cima.
 // Medidas em metros, próximas das reais (~10,4 m de comprimento).
 
+import { caixaArredondada, pneu as formaPneu, aro as formaAro } from './formas.js';
+
 const B = window.BABYLON;
 
 function mat(scene, nome, cor, brilho = 0.15, emissivo = null) {
@@ -63,8 +65,10 @@ export function montarCacamba8x4(scene) {
   const raiz = new B.TransformNode('caminhao-8x4', scene);
   const partes = [];
 
-  const caixa = (larg, alt, prof, x, y, z, m, pai = raiz, nome = 'peca') => {
-    const p = B.MeshBuilder.CreateBox(nome, { width: larg, height: alt, depth: prof }, scene);
+  // r = raio das bordas. Sem r, arredonda só um pouquinho (nada de canto vivo).
+  const caixa = (larg, alt, prof, x, y, z, m, pai = raiz, nome = 'peca', r = null) => {
+    const raio = r ?? Math.min(0.03, 0.3 * Math.min(larg, alt, prof));
+    const p = caixaArredondada(nome, larg, alt, prof, raio, scene, raio > 0.06 ? 4 : 2);
     p.position.set(x, y, z);
     p.material = m;
     p.parent = pai;
@@ -98,13 +102,15 @@ export function montarCacamba8x4(scene) {
   // =================== CABINE ===================
   const cab = { z: 4.0, base: 1.05, alt: 2.05, prof: 2.1 };
   const yc = cab.base + cab.alt / 2;
-  caixa(2.45, cab.alt, cab.prof, 0, yc, cab.z, M.pinturaCabine, raiz, 'cabine');
+  caixa(2.45, cab.alt, cab.prof, 0, yc, cab.z, M.pinturaCabine, raiz, 'cabine', 0.2);
   // teto / defletor preto
-  caixa(2.42, 0.3, 2.0, 0, cab.base + cab.alt + 0.13, cab.z - 0.02, M.preto);
-  caixa(2.42, 0.1, 0.28, 0, cab.base + cab.alt + 0.22, cab.z + 1.12, M.preto);
+  caixa(2.38, 0.34, 2.02, 0, cab.base + cab.alt + 0.1, cab.z - 0.02, M.preto, raiz, 'teto', 0.15);
+  caixa(2.3, 0.12, 0.34, 0, cab.base + cab.alt + 0.2, cab.z + 1.1, M.preto, raiz, 'pala', 0.06);
   // para-brisa e quebra-sol
-  caixa(2.2, 0.72, 0.04, 0, 2.62, 5.06, M.vidro);
-  caixa(2.2, 0.12, 0.05, 0, 3.02, 5.07, M.preto);
+  caixa(2.16, 0.74, 0.06, 0, 2.62, 5.05, M.vidro, raiz, 'parabrisa', 0.03);
+  caixa(2.1, 0.1, 0.06, 0, 3.01, 5.07, M.preto);
+  caixa(2.2, 0.05, 0.05, 0, 2.24, 5.09, M.preto);                           // borracha do vidro
+  espelhar((s) => { const l = caixa(0.03, 0.45, 0.03, s * 0.35, 2.4, 5.1, M.pretoFosco); l.rotation.z = s * 1.2; }); // limpadores
   // faixa escura com os detalhes laranja
   caixa(1.5, 0.15, 0.04, 0, 2.18, 5.065, M.preto);
   espelhar((s) => {
@@ -112,7 +118,7 @@ export function montarCacamba8x4(scene) {
     f.rotation.z = -s * 0.12;
   });
   // grade com frisos
-  caixa(1.42, 0.72, 0.05, 0, 1.72, 5.07, M.preto);
+  caixa(1.42, 0.72, 0.08, 0, 1.72, 5.06, M.preto, raiz, 'grade', 0.05);
   for (let i = 0; i < 4; i++) caixa(1.32, 0.05, 0.04, 0, 1.47 + i * 0.17, 5.1, M.cinza);
   // faróis redondos
   espelhar((s) => {
@@ -122,7 +128,7 @@ export function montarCacamba8x4(scene) {
     caixa(0.06, 0.18, 0.04, s * 1.2, 1.72, 5.07, M.pisca);
   });
   // para-choque preto grande, com faróis de neblina
-  caixa(2.5, 0.72, 0.36, 0, 1.0, 5.1, M.preto);
+  caixa(2.5, 0.72, 0.4, 0, 1.0, 5.08, M.preto, raiz, 'parachoque', 0.12);
   caixa(0.7, 0.16, 0.04, 0, 1.12, 5.29, M.pretoFosco);
   espelhar((s) => {
     cilindro(0.24, 0.05, s * 0.92, 1.12, 5.28, M.pretoFosco, 'z', raiz, 20);
@@ -134,6 +140,9 @@ export function montarCacamba8x4(scene) {
     caixa(0.04, 0.72, 0.95, xl, 2.62, 4.45, M.vidro);            // janela da porta
     caixa(0.04, 0.55, 0.3, xl, 2.62, 3.28, M.vidro);             // janela traseira pequena
     caixa(0.045, 0.6, 1.9, xl, 1.36, 4.05, M.preto);             // saia preta "off-road"
+    caixa(0.03, 1.95, 0.025, s * 1.237, 2.1, 3.55, M.pretoFosco); // linha da porta (atrás)
+    caixa(0.03, 1.75, 0.025, s * 1.237, 2.05, 4.72, M.pretoFosco); // linha da porta (frente)
+    caixa(0.05, 0.05, 0.22, s * 1.25, 2.18, 3.75, M.cinza);       // maçaneta
     const lr = caixa(0.05, 0.07, 0.8, xl, 1.72, 3.55, M.laranja); // detalhe laranja
     lr.rotation.x = 0.35;
     caixa(0.5, 0.06, 0.4, s * 1.05, 0.72, 4.4, M.preto);         // degrau
@@ -142,8 +151,9 @@ export function montarCacamba8x4(scene) {
     // retrovisores
     caixa(0.32, 0.05, 0.05, s * 1.38, 2.95, 4.98, M.preto);
     caixa(0.05, 0.62, 0.05, s * 1.52, 2.7, 4.98, M.preto);
-    caixa(0.1, 0.55, 0.28, s * 1.6, 2.62, 4.98, M.preto);
-    caixa(0.1, 0.25, 0.22, s * 1.6, 2.2, 4.98, M.preto);
+    caixa(0.12, 0.56, 0.3, s * 1.6, 2.62, 4.98, M.preto, raiz, 'retrovisor', 0.05);
+    caixa(0.12, 0.26, 0.24, s * 1.6, 2.2, 4.98, M.preto, raiz, 'retrovisor', 0.05);
+    caixa(0.02, 0.48, 0.24, s * 1.67, 2.62, 4.98, M.vidro);
   });
 
   // estepe atrás da cabine e escada da caçamba (lado esquerdo)
@@ -213,24 +223,35 @@ export function montarCacamba8x4(scene) {
     const giro = new B.TransformNode('giro-roda', scene);
     giro.parent = pivo;
     const larg = dianteira ? 0.36 : 0.68;
-    pneus.push(cilindro(R * 2, larg, 0, 0, 0, M.pneu, 'x', giro, 28, 'pneu'));
-    // banda de rodagem: frisos para dar para ver a roda girando
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2;
-      const f = caixa(larg * 0.9, 0.04, 0.12, 0, Math.cos(a) * (R - 0.012), Math.sin(a) * (R - 0.012), M.pretoFosco, giro, 'friso');
-      f.rotation.x = a; // o lado fino fica virado para fora
+    const face = lado * (larg / 2);
+    if (dianteira) {
+      const p = formaPneu('pneu', R, larg, scene); p.parent = giro; p.material = M.pneu; partes.push(p); pneus.push(p);
+    } else {
+      // rodado duplo: dois pneus lado a lado
+      for (const d of [-1, 1]) {
+        const p = formaPneu('pneu', R, larg * 0.49, scene);
+        p.position.x = d * larg * 0.255; p.parent = giro; p.material = M.pneu; partes.push(p); pneus.push(p);
+      }
     }
-    // aro prateado de alumínio com cubo e porcas
-    const face = lado * (larg / 2 + 0.005);
-    aros.push(cilindro(R * 1.22, 0.04, face, 0, 0, M.prata, 'x', giro, 28, 'aro'));
-    cilindro(0.3, 0.08, face + lado * 0.03, 0, 0, M.prata, 'x', giro, 16, 'cubo');
+    // sulcos da banda de rodagem
+    for (const off of [-0.25, 0, 0.25]) {
+      const sulco = B.MeshBuilder.CreateTorus('sulco', { diameter: R * 2 - 0.004, thickness: 0.018, tessellation: 32 }, scene);
+      sulco.rotation.z = Math.PI / 2;
+      sulco.position.x = off * larg;
+      sulco.material = M.pretoFosco; sulco.parent = giro; partes.push(sulco);
+    }
+    // aro de alumínio em prato, cubo e porcas
+    const a = formaAro('aro', R * 0.62, lado, scene);
+    a.position.x = face - lado * 0.06; a.parent = giro; a.material = M.prata; partes.push(a); aros.push(a);
+    cilindro(0.3, 0.12, face - lado * 0.01, 0, 0, M.prata, 'x', giro, 20, 'cubo');
+    cilindro(0.16, 0.05, face + lado * 0.05, 0, 0, M.cinza, 'x', giro, 16, 'tampa-cubo');
     for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * Math.PI * 2;
-      cilindro(0.045, 0.05, face + lado * 0.05, Math.sin(a) * 0.2, Math.cos(a) * 0.2, M.cinza, 'x', giro, 6, 'porca');
+      const ang = (i / 10) * Math.PI * 2;
+      cilindro(0.04, 0.05, face + lado * 0.04, Math.sin(ang) * 0.115, Math.cos(ang) * 0.115, M.cinza, 'x', giro, 6, 'porca');
     }
     for (let i = 0; i < 8; i++) {                                        // furos do aro
-      const a = (i / 8) * Math.PI * 2 + 0.2;
-      cilindro(0.09, 0.05, face + lado * 0.012, Math.sin(a) * 0.4, Math.cos(a) * 0.4, M.pretoFosco, 'x', giro, 8, 'furo');
+      const ang = (i / 8) * Math.PI * 2 + 0.2;
+      cilindro(0.085, 0.06, face - lado * 0.035, Math.sin(ang) * 0.24, Math.cos(ang) * 0.24, M.pretoFosco, 'x', giro, 10, 'furo');
     }
     giros.push(giro);
     if (dianteira) rodasDianteiras.push({ pivo, fator: z > 3 ? 1 : 0.65 }); // 2º eixo vira menos
@@ -272,6 +293,24 @@ export function montarCacamba8x4(scene) {
       atualizarPistao();
     },
     get cacamba() { return anguloCacamba / 0.84; },
+    // reflexo do ambiente (uma textura cúbica do céu): deixa pintura, vidro e aros mais reais
+    definirReflexo(textura) {
+      // borda: reflexo visto de lado (rasante); frente: reflexo visto de frente
+      const usar = (m, borda, frente) => {
+        m.reflectionTexture = textura;
+        const f = new B.FresnelParameters();
+        f.bias = 0.05; f.power = 2.2;
+        f.leftColor = new B.Color3(borda, borda, borda);
+        f.rightColor = new B.Color3(frente, frente, frente);
+        m.reflectionFresnelParameters = f;
+      };
+      usar(M.pinturaCabine, 0.6, 0.06);
+      usar(M.pinturaCacamba, 0.4, 0.04);
+      usar(M.preto, 0.35, 0.04);
+      usar(M.vidro, 0.9, 0.3);
+      usar(M.prata, 0.75, 0.45);
+      usar(M.tanque, 0.6, 0.3);
+    },
     definirCor(hex) {
       M.pinturaCabine.diffuseColor = B.Color3.FromHexString(hex);
       M.pinturaCacamba.diffuseColor = B.Color3.FromHexString(hex);

@@ -30,9 +30,27 @@ mChao.specularColor = B.Color3.Black();
 chao.material = mChao;
 chao.receiveShadows = true;
 
+// céu com degradê (também é o que a pintura reflete)
+const ceu = B.MeshBuilder.CreateSphere('ceu', { diameter: 200, segments: 16, sideOrientation: B.Mesh.BACKSIDE }, scene);
+const texCeu = new B.DynamicTexture('tex-ceu', { width: 8, height: 256 }, scene, false);
+const g = texCeu.getContext().createLinearGradient(0, 0, 0, 256);
+g.addColorStop(0, '#aeb6bc'); g.addColorStop(0.48, '#d5dde2'); g.addColorStop(0.52, '#cfe6f6'); g.addColorStop(1, '#5f9fd8');
+texCeu.getContext().fillStyle = g; texCeu.getContext().fillRect(0, 0, 8, 256); texCeu.update();
+const mCeu = new B.StandardMaterial('mceu', scene);
+mCeu.emissiveTexture = texCeu; mCeu.disableLighting = true; mCeu.backFaceCulling = false;
+ceu.material = mCeu;
+ceu.infiniteDistance = true;
+
 // ----- caminhão -----
 const modelo = montarCacamba8x4(scene);
 for (const p of modelo.partes) sombras.addShadowCaster(p);
+
+// "foto" do ambiente em volta, tirada uma vez, para os reflexos
+const sonda = new B.ReflectionProbe('sonda', 128, scene);
+sonda.renderList.push(ceu, chao);
+sonda.position = new B.Vector3(0, 2, 0);
+sonda.refreshRate = B.RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
+modelo.definirReflexo(sonda.cubeTexture);
 
 // ----- câmera que gira com o dedo -----
 const cam = new B.ArcRotateCamera('cam', Math.PI * 0.72, 1.2, 17, new B.Vector3(0, 1.6, 0), scene);
