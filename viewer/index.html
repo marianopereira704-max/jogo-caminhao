@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Visualizador — Caçamba 8x4</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #1b2430; color: #fff;
+      font-family: system-ui, -apple-system, Roboto, sans-serif; touch-action: none; user-select: none; }
+    canvas { position: fixed; inset: 0; width: 100%; height: 100%; outline: none; }
+    .barra { position: fixed; left: 0; right: 0; display: flex; justify-content: center; flex-wrap: wrap;
+      gap: 8px; padding: 10px max(10px, env(safe-area-inset-left)); pointer-events: none; }
+    .barra.cima { top: 0; }
+    .barra.baixo { bottom: 0; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+    .barra > * { pointer-events: auto; }
+    button { font: inherit; color: #fff; border: 2px solid rgba(255,255,255,.35); background: rgba(20,28,38,.7);
+      border-radius: 12px; padding: 10px 14px; font-size: 15px; font-weight: 600; }
+    button.ativo { background: #f5b82e; color: #1b2430; border-color: #f5b82e; }
+    .cor { width: 40px; height: 40px; padding: 0; border-radius: 50%; border: 3px solid rgba(255,255,255,.6); }
+    .cor.ativo { border-color: #f5b82e; transform: scale(1.15); }
+    #titulo { position: fixed; top: 64px; left: 12px; font-size: 13px; opacity: .75; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <canvas id="tela"></canvas>
+  <div class="barra cima">
+    <button data-vista="34">3/4</button>
+    <button data-vista="lado">Lado</button>
+    <button data-vista="frente">Frente</button>
+    <button data-vista="tras">Traseira</button>
+    <button data-vista="cima">Cima</button>
+  </div>
+  <div id="titulo">Caçamba 8x4 · arraste para girar, pinça para aproximar</div>
+  <div class="barra baixo">
+    <div id="cores" style="display:flex;gap:8px;align-items:center"></div>
+    <button id="btn-cacamba">Levantar caçamba</button>
+    <button id="btn-rodas">Rodas</button>
+    <button id="btn-noite">Noite</button>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/babylonjs@9.31.2/babylon.js"></script>
+  <script type="module" src="viewer.js"></script>
+</body>
+</html>
