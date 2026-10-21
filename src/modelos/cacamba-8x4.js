@@ -156,11 +156,6 @@ export function montarCacamba8x4(scene) {
     caixa(0.02, 0.48, 0.24, s * 1.67, 2.62, 4.98, M.vidro);
   });
 
-  // estepe atrás da cabine e escada da caçamba (lado esquerdo)
-  cilindro(1.02, 0.3, -0.8, 1.95, 2.45, M.pneu, 'x', raiz, 24);
-  cilindro(0.62, 0.32, -0.8, 1.95, 2.45, M.prata, 'x', raiz, 20);
-  espelhar((s) => caixa(0.05, 2.1, 0.05, -1.3, 1.75, 2.3 + s * 0.17, M.pinturaCacamba));
-  for (let i = 0; i < 6; i++) caixa(0.05, 0.04, 0.34, -1.3, 0.85 + i * 0.36, 2.3, M.pinturaCacamba);
 
   // =================== CAÇAMBA (gira na dobradiça traseira) ===================
   const cacPivo = new B.TransformNode('cacamba-pivo', scene);
