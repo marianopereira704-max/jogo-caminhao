@@ -5,7 +5,7 @@ import { Audio } from './audio.js';
 import { Controles } from './controles.js';
 import { Caminhao } from './caminhao.js';
 import { CameraSeguir } from './camera.js';
-import { MundoTeste } from './mundo-teste.js';
+import { MundoLitoral } from './mundo/litoral.js';
 import { Garagem } from './garagem.js';
 import { criarReflexo } from './reflexo.js';
 
@@ -30,7 +30,7 @@ scene.autoClear = true;
 
 const preferencias = carregar();
 const audio = new Audio();
-const mundo = new MundoTeste(scene);
+const mundo = new MundoLitoral(scene);
 const caminhao = new Caminhao(scene, mundo.sombras);
 caminhao.modelo.definirReflexo(criarReflexo(scene, [mundo.ceu, mundo.chao]));
 caminhao.aplicarVisual(preferencias);
@@ -154,6 +154,7 @@ engine.runRenderLoop(() => {
   }
   camera.atualizar(caminhao, dt);
   mundo.seguirSol(caminhao.posicao);
+  mundo.atualizar(dt);
   scene.render();
   conferirQualidade(agora);
 });

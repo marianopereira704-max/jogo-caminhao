@@ -5,8 +5,8 @@ const B = window.BABYLON;
 export class CameraSeguir {
   constructor(scene, canvas) {
     this.cam = new B.UniversalCamera('camera', new B.Vector3(0, 6, -14), scene);
-    this.cam.minZ = 0.3;
-    this.cam.maxZ = 700;
+    this.cam.minZ = 0.6;
+    this.cam.maxZ = 3000;
     this.cam.fov = 1.0;
     this.cam.inputs.clear();          // a câmera não responde a toques: só segue o caminhão
     this.alvo = new B.Vector3(0, 1.5, 0);
