@@ -308,7 +308,6 @@ export class MundoLitoral {
       meioFio(L.calcadaOesteX[1] - 0.25, L.calcadaOesteX[1], z0, z1);
       b.calc.push(this._piso('c', L.ruaInternaX[1], L.ruaInternaX[1] + 3, z0, z1, 0.03, 2.4));
       b.calc.push(this._piso('c', L.frenteLojasX, L.ruaInternaX[0], z0, z1, 0.03, 2.4));
-      this.obstaculos.push({ x: (L.canteiroX[0] + L.canteiroX[1]) / 2, z: (z0 + z1) / 2, mx: 2.6, mz: (z1 - z0) / 2 });
     }
     b.calcadao.push(this._piso('cd', L.calcadaoX[0], L.calcadaoX[1], -1500, 1500, 0.03, 3));
     meioFio(L.ciclovia[1], L.ciclovia[1] + 0.25, -1500, 1500);
