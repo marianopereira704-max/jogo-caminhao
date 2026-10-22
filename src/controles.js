@@ -77,7 +77,17 @@ export class Controles {
 
     // ----- Configurações -----
     const painel = document.getElementById('painel-config');
-    botaoToque(document.getElementById('btn-config'), () => { audio.clique(); painel.classList.remove('escondido'); });
+    // configurações são para os pais: só abre segurando o dedo 1,5 s (um anel enche em volta)
+    const btnConfig = document.getElementById('btn-config');
+    let segurar = null;
+    const cancelar = () => { clearTimeout(segurar); segurar = null; btnConfig.classList.remove('segurando'); };
+    btnConfig.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      cancelar();
+      btnConfig.classList.add('segurando');
+      segurar = setTimeout(() => { cancelar(); vibrar(25); audio.clique(); painel.classList.remove('escondido'); }, 1500);
+    });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) btnConfig.addEventListener(ev, cancelar);
     botaoToque(document.getElementById('btn-fechar-config'), () => { audio.clique(); painel.classList.add('escondido'); });
     for (const el of painel.querySelectorAll('[data-modo]')) {
       botaoToque(el, () => { audio.clique(true); this.definirModo(el.dataset.modo, true); });

@@ -21,6 +21,15 @@ export class CameraSeguir {
 
   atualizar(caminhao, dt) {
     this._calcular(caminhao, 1 - Math.exp(-dt * 3.5));
+    // o ângulo de visão abre com a velocidade: dá sensação de rapidez
+    const fovAlvo = 1.0 + 0.2 * Math.min(1, Math.abs(caminhao.velocidade) / 16.7);
+    this.cam.fov += (fovAlvo - this.cam.fov) * (1 - Math.exp(-dt * 2));
+    // tremida curta depois de uma batida
+    if (caminhao.tranco > 0) {
+      const t = caminhao.tranco * 0.35;
+      this.cam.position.x += (Math.random() - 0.5) * t;
+      this.cam.position.y += (Math.random() - 0.5) * t;
+    }
   }
 
   _calcular(caminhao, mistura) {

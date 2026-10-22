@@ -26,7 +26,14 @@ export const L = {
   transversaisZ: [-300, 0, 300],
   meiaRua: 6,
   zMin: -306, zMax: 306,
+  // balões de retorno nas duas pontas da avenida (circuito fechado, sem beco)
+  balao: { x: 25, z: 334, r0: 8, r1: 24 },
+  zonaBalao: [304, 362],        // faixa de z (em módulo) ocupada pelo balão
+  patioZ: [362, 470],           // depósito (norte) e obra (sul), em módulo
+  limiteZ: 472,
+  limiteLesteX: 54.2,           // mureta da praia
 };
+const naZonaBalao = (z) => Math.abs(z) > L.zonaBalao[0] && Math.abs(z) < L.zonaBalao[1];
 
 let semente = 2024;
 const rnd = () => { semente = (semente * 16807) % 2147483647; return (semente - 1) / 2147483646; };
@@ -45,6 +52,7 @@ export class MundoLitoral {
     this._ruas(scene);
     this._faixas(scene);
     this._calcadas(scene);
+    this._limites(scene);
     this._predios(scene);
     this._comercio(scene);
     this._vegetacao(scene);
@@ -188,7 +196,7 @@ export class MundoLitoral {
   _chao(scene) {
     const { M } = this;
     // quarteirões e entorno: calçamento urbano (sem gramado gigante)
-    this.chao = this._juntar([this._piso('lote', -900, L.calcadaoX[0], -900, 900, 0, 6)], M.lote, 'chao');
+    this.chao = this._juntar([this._piso('lote', -900, L.calcadaoX[1], -900, 900, 0, 6)], M.lote, 'chao');
     this._juntar([this._piso('areia', L.areiaX[0], L.areiaX[1] + 30, -1500, 1500, 0.01, 7)], M.areia, 'areia');
 
     // mar: azul-esverdeado, ondulação (relevo procedural) e reflexo do céu
@@ -255,7 +263,36 @@ export class MundoLitoral {
     for (const z of L.transversaisZ) faixa(L.canteiroX[0], L.canteiroX[1], z - meiaRua, z + meiaRua);
     faixa(L.ruaInternaX[0], L.ruaInternaX[1], zMin, zMax);
     for (const z of L.transversaisZ) faixa(L.ruaInternaX[1], L.avSulX[0], z - meiaRua, z + meiaRua);
+    // balões: anel de asfalto ligando as duas pistas + saída para o depósito/obra
+    const { x: bx, z: bz, r0, r1 } = L.balao;
+    for (const s of [1, -1]) {
+      p.push(this._anel(bx, s * bz, r0, r1, 0.02, 9));
+      faixa(L.avSulX[0], L.avNorteX[1], s > 0 ? 304 : -318, s > 0 ? 318 : -304);
+      faixa(bx - 8, bx + 8, s > 0 ? bz + r1 - 4 : -L.patioZ[0] - 4, s > 0 ? L.patioZ[0] + 4 : -(bz + r1 - 4));
+    }
     this._juntar(p, this.M.asfalto, 'ruas');
+  }
+
+  // anel (coroa circular) no chão com UV em metros
+  _anel(cx, cz, r0, r1, y, tile, segs = 64) {
+    const pos = [], uv = [], nor = [], idx = [];
+    for (let i = 0; i <= segs; i++) {
+      const a = (i / segs) * Math.PI * 2;
+      for (const r of [r0, r1]) {
+        const x = cx + Math.cos(a) * r, z = cz + Math.sin(a) * r;
+        pos.push(x, y, z); nor.push(0, 1, 0); uv.push(x / tile, z / tile);
+      }
+    }
+    for (let i = 0; i < segs; i++) {
+      const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+      idx.push(a, b, c, b, d, c);
+    }
+    const m = new B.Mesh('anel', this.scene);
+    const v = new B.VertexData();
+    v.positions = pos; v.normals = nor; v.uvs = uv; v.indices = idx;
+    v.applyToMesh(m);
+    m.receiveShadows = true;
+    return m;
   }
 
   // ======================= sinalização horizontal =======================
@@ -274,7 +311,20 @@ export class MundoLitoral {
         for (let z = L.zMin; z < L.zMax; z += 10) if (!pertoDeCruzamento(z + 5, 9)) marca('branca', x, z + 5, 0.15, 10);
       }
     }
-    for (let z = -1500; z < 1500; z += 50) marca('vermelha', (L.ciclovia[0] + L.ciclovia[1]) / 2, z + 25, 3, 50);
+    for (let z = -1500; z < 1500; z += 10) if (!naZonaBalao(z + 5)) marca('vermelha', (L.ciclovia[0] + L.ciclovia[1]) / 2, z + 5, 3, 10);
+    // tracejado branco no meio do balão
+    const { x: bx, z: bz, r0, r1 } = L.balao;
+    const rm = (r0 + r1) / 2;
+    for (const s of [1, -1]) {
+      for (let i = 0; i < 36; i += 1) {
+        if (i % 2) continue;
+        const a = (i / 36) * Math.PI * 2;
+        const g = B.MeshBuilder.CreateGround('marca', { width: 0.15, height: 2.6 }, scene);
+        g.position.set(bx + Math.cos(a) * rm, 0.035, s * bz + Math.sin(a) * rm);
+        g.rotation.y = -a;
+        lista.branca.push(g);
+      }
+    }
     const xi = (L.ruaInternaX[0] + L.ruaInternaX[1]) / 2;
     for (let z = L.zMin + 2; z < L.zMax; z += 9) if (!pertoDeCruzamento(z, 8)) marca('amarela', xi, z, 0.15, 3);
     for (const zt of L.transversaisZ) {
@@ -312,13 +362,59 @@ export class MundoLitoral {
       b.calc.push(this._piso('c', L.ruaInternaX[1], L.ruaInternaX[1] + 3, z0, z1, 0.03, 2.4));
       b.calc.push(this._piso('c', L.frenteLojasX, L.ruaInternaX[0], z0, z1, 0.03, 2.4));
     }
-    b.calcadao.push(this._piso('cd', L.calcadaoX[0], L.calcadaoX[1], -1500, 1500, 0.03, 3));
-    meioFio(L.ciclovia[1], L.ciclovia[1] + 0.25, -1500, 1500);
+    const [zb0, zb1] = L.zonaBalao;
+    for (const [z0, z1] of [[-1500, -zb1], [-zb0, zb0], [zb1, 1500]]) {
+      b.calcadao.push(this._piso('cd', L.calcadaoX[0], L.calcadaoX[1], z0, z1, 0.03, 3));
+      meioFio(L.ciclovia[1], L.ciclovia[1] + 0.25, z0, z1);
+    }
+    for (const s of [1, -1]) {
+      const z0 = s > 0 ? zb0 : -zb1, z1 = s > 0 ? zb1 : -zb0;
+      b.calcadao.push(this._piso('cd', L.balao.x + L.balao.r1 + 0.5, L.calcadaoX[1], z0, z1, 0.03, 3));
+      // ilha do balão: grama com meio-fio e 3 coqueiros
+      const ilha = B.MeshBuilder.CreateDisc('ilha-balao', { radius: L.balao.r0, tessellation: 48 }, scene);
+      ilha.rotation.x = Math.PI / 2; ilha.position.set(L.balao.x, 0.12, s * L.balao.z);
+      b.grama.push(ilha);
+      const borda = B.MeshBuilder.CreateTorus('borda-ilha', { diameter: L.balao.r0 * 2, thickness: 0.3, tessellation: 48 }, scene);
+      borda.position.set(L.balao.x, 0.08, s * L.balao.z);
+      b.fio.push(borda);
+    }
     this._juntar(b.calc, this.M.calcada, 'calcadas');
     this._juntar(b.calcadao, this.M.calcadao, 'calcadao');
     this._juntar(b.grama, this.M.grama, 'canteiros');
     this._juntar(b.fio, this.M.meioFio, 'meio-fio');
-    this.limiteLeste = L.calcadaoX[1] + 2;
+    this.limiteLeste = L.limiteLesteX;
+  }
+
+  // ======================= limites visíveis =======================
+  // Onde o caminhão não pode passar, tem algo que se VÊ: mureta na praia,
+  // gradil do lado das lojas e muro no fundo do depósito e da obra.
+  _limites(scene) {
+    const muretas = [], gradis = [];
+    const caixa = (lista, w, h, d, x, y, z) => {
+      const m = B.MeshBuilder.CreateBox('limite', { width: w, height: h, depth: d }, scene);
+      m.position.set(x, y, z); lista.push(m); return m;
+    };
+    const xL = L.limiteLesteX + 0.55, xO = L.frenteLojasX - 0.4, zL = L.limiteZ + 0.6;
+    caixa(muretas, 0.4, 0.75, 3000, xL, 0.375, 0);                       // mureta da praia
+    caixa(muretas, 0.35, 0.9, zL * 2, xO, 0.45, 0);                     // mureta oeste
+    for (const s of [1, -1]) caixa(muretas, xL - xO, 2.4, 0.4, (xL + xO) / 2, 1.2, s * zL);   // muros do fundo
+    // gradil (barras) em cima da mureta oeste: uma textura com transparência
+    const t = new B.DynamicTexture('tex-gradil', { width: 64, height: 64 }, scene, true);
+    const c = t.getContext();
+    c.clearRect(0, 0, 64, 64); c.fillStyle = '#2f3438';
+    c.fillRect(0, 2, 64, 5); c.fillRect(0, 57, 64, 5);
+    for (let x = 4; x < 64; x += 16) c.fillRect(x, 0, 5, 64);
+    t.update(); t.hasAlpha = true;
+    t.wrapU = B.Texture.WRAP_ADDRESSMODE;
+    const mg = new B.StandardMaterial('gradil', scene);
+    mg.diffuseTexture = t; mg.useAlphaFromDiffuseTexture = false; mg.backFaceCulling = false;
+    mg.specularColor = new B.Color3(0.2, 0.2, 0.2);
+    const g = B.MeshBuilder.CreatePlane('gradil', { width: zL * 2, height: 1.2 }, scene);
+    g.position.set(xO, 1.5, 0); g.rotation.y = Math.PI / 2; g.material = mg;
+    const uv = g.getVerticesData(B.VertexBuffer.UVKind);
+    for (let i = 0; i < uv.length; i += 2) uv[i] *= (zL * 2) / 1.2;
+    g.setVerticesData(B.VertexBuffer.UVKind, uv);
+    this.casters.push(this._juntar(muretas, this.M.muro, 'muretas'));
   }
 
   // ======================= prédios de frente para o mar =======================
@@ -631,6 +727,7 @@ export class MundoLitoral {
       const p = poste.createInstance('poste' + n++); p.position.set(25, 0, z); p.freezeWorldMatrix();
     }
     for (let z = -700; z < 700; z += 40) {
+      if (naZonaBalao(z)) continue;
       const p = poste.createInstance('poste' + n++); p.position.set(46.5, 0, z); p.rotation.y = Math.PI / 2; p.scaling.setAll(0.85); p.freezeWorldMatrix();
       this.obstaculos.push({ x: 46.5, z, r: 0.3 });
     }
@@ -696,11 +793,11 @@ export class MundoLitoral {
 
   // ======================= praça (norte) e marina =======================
   _praca(scene) {
-    const piso = this._piso('praca', L.ruaInternaX[0], L.calcadaOesteX[1], 306, 380, 0.03, 3);
+    const piso = this._piso('praca', L.ruaInternaX[0], -2, 306, 360, 0.03, 3);
     piso.material = this.M.calcadao; piso.freezeWorldMatrix();
     const mAreia = this.M.areia;
     const mRede = new B.StandardMaterial('rede', scene); mRede.diffuseColor = B.Color3.FromHexString('#f4f4f4');
-    for (const x of [-26, -6]) {
+    for (const x of [-30, -14]) {
       const q = this._piso('quadra', x - 8, x + 8, 332, 358, 0.05, 6); q.material = mAreia;
       const rede = B.MeshBuilder.CreateBox('rede', { width: 10, height: 1, depth: 0.05 }, scene);
       rede.position.set(x, 2.2, 345); rede.material = mRede;
@@ -722,15 +819,15 @@ export class MundoLitoral {
 
   // ======================= shopping (sul), pontos de ônibus, quiosques =======================
   _shopping(scene) {
-    const corpo = B.MeshBuilder.CreateBox('shopping', { width: 50, height: 16, depth: 50 }, scene);
-    corpo.position.set(-18, 8, -345); corpo.material = this.M.paredes[1];
+    const corpo = B.MeshBuilder.CreateBox('shopping', { width: 40, height: 16, depth: 36 }, scene);
+    corpo.position.set(-24, 8, -338); corpo.material = this.M.paredes[1];
     this.casters.push(corpo);
-    const vidro = B.MeshBuilder.CreateBox('shop-vidro', { width: 0.4, height: 10, depth: 34 }, scene);
-    vidro.position.set(7.1, 7, -345); vidro.material = this.M.vidro;
+    const vidro = B.MeshBuilder.CreateBox('shop-vidro', { width: 0.4, height: 10, depth: 26 }, scene);
+    vidro.position.set(-3.9, 7, -338); vidro.material = this.M.vidro;
     const ml = new B.StandardMaterial('shop-letreiro', scene); ml.diffuseTexture = T.texPlacaRua(scene, 'Shopping da Orla');
     const letreiro = B.MeshBuilder.CreatePlane('shop-placa', { width: 20, height: 5 }, scene);
-    letreiro.position.set(7.4, 13.5, -345); letreiro.rotation.y = -Math.PI / 2; letreiro.material = ml;
-    this.obstaculos.push({ x: -18, z: -345, mx: 25, mz: 25 });
+    letreiro.position.set(-3.6, 13.5, -338); letreiro.rotation.y = -Math.PI / 2; letreiro.material = ml;
+    this.obstaculos.push({ x: -24, z: -338, mx: 20, mz: 18 });
 
     const mAbrigo = this.M.metal;
     for (const z of [-150, 150]) {
@@ -808,7 +905,7 @@ export class MundoLitoral {
 
   bateu(pontos, raio) {
     for (const p of pontos) {
-      if (p.x > this.limiteLeste || p.x < L.frenteLojasX || p.z > 372 || p.z < -372) return true;
+      if (p.x > this.limiteLeste || p.x < L.frenteLojasX || Math.abs(p.z) > L.limiteZ) return true;
       for (const o of this.obstaculos) {
         if (o.r !== undefined) {
           const dx = p.x - o.x, dz = p.z - o.z, d = o.r + raio;

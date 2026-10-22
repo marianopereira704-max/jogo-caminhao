@@ -42,7 +42,7 @@ const voltarParaEstrada = () => {
 };
 voltarParaEstrada();
 
-caminhao.aoEncostar = () => { audio.toc(); try { navigator.vibrate && navigator.vibrate(40); } catch {} };
+caminhao.aoEncostar = (forte) => { audio.toc(forte); try { navigator.vibrate && navigator.vibrate(forte ? [60, 40, 30] : 30); } catch {} };
 
 // ----- Telas: 'inicio' -> 'garagem' <-> 'dirigindo' -----
 let estado = 'inicio';

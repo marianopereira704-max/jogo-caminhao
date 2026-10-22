@@ -220,3 +220,16 @@ svg { display: block; width: 100%; height: 100%; pointer-events: none; }
 .item .pe { position: absolute; left: 15%; right: 15%; bottom: -2.6vh; height: 2.4vh; border-radius: 1vh; background: #c9a46e; box-shadow: inset 0 -.6vh 0 rgba(0,0,0,.2); }
 .item.selecionado { transform: translateY(-2vh) scale(1.08); background: rgba(255, 226, 106, .22); box-shadow: 0 0 0 .6vh #ffe26a; }
 .item:active { transform: scale(.92); }
+
+/* botão de configurações: anel que enche enquanto segura */
+#btn-config { position: relative; }
+#btn-config::after {
+  content: ''; position: absolute; inset: -6px; border-radius: 50%;
+  background: conic-gradient(#f5b82e calc(var(--p, 0) * 1%), transparent 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+  opacity: 0; pointer-events: none;
+}
+@property --p { syntax: '<number>'; inherits: false; initial-value: 0; }
+#btn-config.segurando::after { opacity: 1; animation: encher 1.5s linear forwards; }
+@keyframes encher { from { --p: 0; } to { --p: 100; } }

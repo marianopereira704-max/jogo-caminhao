@@ -157,9 +157,21 @@ export class Audio {
   }
 
   // ----- Batida leve: quando o caminhão encosta em algo -----
-  toc() {
+  toc(forte = false) {
     if (!this.ctx) return;
     const c = this.ctx, t = c.currentTime;
+    if (forte) {
+      // "tum" mais grave e encorpado para a batida com velocidade
+      const r = c.createBufferSource();
+      const buf = c.createBuffer(1, c.sampleRate * 0.25, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
+      r.buffer = buf;
+      const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 380;
+      const g = c.createGain(); g.gain.value = 0.55;
+      r.connect(f).connect(g).connect(this.mestre);
+      r.start(t);
+    }
     const o = c.createOscillator();
     const g = c.createGain();
     o.type = 'sine';

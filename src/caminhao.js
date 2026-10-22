@@ -18,6 +18,8 @@ export class Caminhao {
     this.marchaPendente = null;   // marcha pedida enquanto ainda está andando
     this.encostado = false;
     this.alvoCacamba = 0;         // 0 = abaixada, 1 = levantada
+    this.tranco = 0;              // 0 a 1: força da última batida (balança a câmera)
+    this.travado = false;         // true enquanto carrega no depósito
   }
 
   get posicao() { return this.raiz.position; }
@@ -66,8 +68,13 @@ export class Caminhao {
     const C = CONFIG;
     const aproximar = (v, alvo, passo) => (v < alvo ? Math.min(v + passo, alvo) : Math.max(v - passo, alvo));
 
+    this.tranco = Math.max(0, this.tranco - dt * 2.5);
+
     // ---- velocidade ----
-    if (this.marchaPendente) {
+    if (this.travado) {
+      // carregando: freia até parar e espera
+      this.velocidade = aproximar(this.velocidade, 0, C.freio * 1.5 * dt);
+    } else if (this.marchaPendente) {
       this.velocidade = aproximar(this.velocidade, 0, C.freio * dt);
       if (Math.abs(this.velocidade) < 0.3) {
         this.velocidade = 0;
@@ -101,10 +108,13 @@ export class Caminhao {
     const pontos = [pf, (pf + pt) / 2, pt].map((d) => ({ x: nx + fx * d, z: nz + fz * d }));
 
     if (Math.abs(passo) > 0 && mundo.bateu(pontos, 1.4)) {
-      // encostou: para na hora, sem dano
-      if (!this.encostado) this.aoEncostar && this.aoEncostar();
+      // encostou: primeira batida com velocidade dá um tranco e recua um pouco;
+      // se continuar empurrando, só fica parado (sem ficar batendo sem parar)
+      const forte = !this.encostado && Math.abs(this.velocidade) > 3;
+      if (!this.encostado) this.aoEncostar && this.aoEncostar(forte);
+      this.tranco = forte ? Math.min(1, Math.abs(this.velocidade) / 12) : this.tranco;
+      this.velocidade = forte ? -this.velocidade * 0.3 : 0;
       this.encostado = true;
-      this.velocidade = 0;
     } else {
       if (Math.abs(passo) > 0.001) this.encostado = false;
       this.raiz.rotation.y = novoAngulo;
