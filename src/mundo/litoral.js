@@ -236,7 +236,7 @@ export class MundoLitoral {
     this.limiteLeste = L.calcadaoX[1] + 2;
   }
 
-  // ======================= prédios altos à beira-mar =======================
+  // ======================= quarteirões: prédios misturados com casas =======================
   _predios(scene) {
     const mats = [0, 1, 2, 3].map((v) => {
       const m = mat(scene, 'fachada' + v, '#ffffff', 0.25);
@@ -246,6 +246,7 @@ export class MundoLitoral {
     const mTopo = mat(scene, 'cobertura', '#b9bcc0', 0.05);
     const porMaterial = mats.map(() => []);
     const topos = [];
+    this._casas = this._casas || { corpos: {}, telhados: [] };
     const predio = (x, z, larg, prof, alt, v) => {
       // UV por face: a textura (4 vãos x 4 andares ≈ 8 m x 12 m) repete pelo prédio
       const lado = (w) => new B.Vector4(0, 0, w / 8, alt / 12);
@@ -260,15 +261,21 @@ export class MundoLitoral {
       topos.push(t);
       this.obstaculos.push({ x, z, mx: larg / 2, mz: prof / 2 });
     };
+
+    // frente para a avenida: sequência variada (torre, sobrados, prédio médio, espaço livre)
+    const tipos = ['torre', 'casas', 'medio', 'torre', 'livre', 'casas', 'medio'];
+    let k = 0;
     for (const [z0, z1] of [[-293, -7], [7, 293]]) {
-      // frente para a avenida: torres altas
-      for (let z = z0 + 14; z < z1 - 10; z += 30 + rnd() * 6) {
-        const larg = 22 + rnd() * 6, prof = 20 + rnd() * 6;
-        predio(-14, z, prof, larg, 36 + Math.floor(rnd() * 10) * 3, Math.floor(rnd() * 4));
+      for (let z = z0 + 18; z < z1 - 14; z += 42) {
+        const tipo = tipos[k++ % tipos.length];
+        if (tipo === 'torre') predio(-14, z, 22, 24, 36 + Math.floor(rnd() * 8) * 3, Math.floor(rnd() * 4));
+        else if (tipo === 'medio') predio(-15, z, 24, 22, 15 + Math.floor(rnd() * 3) * 3, Math.floor(rnd() * 4));
+        else if (tipo === 'casas') { this._casa(scene, -12, z - 8, 0); this._casa(scene, -12, z + 8, 0); }
       }
-      // fundo do quarteirão: prédios médios
-      for (let z = z0 + 14; z < z1 - 10; z += 26 + rnd() * 6) {
-        predio(-62 - rnd() * 6, z, 22, 20 + rnd() * 4, 15 + Math.floor(rnd() * 5) * 3, Math.floor(rnd() * 4));
+      // fundo do quarteirão: mais casas, poucos prédios médios
+      for (let z = z0 + 20; z < z1 - 14; z += 38) {
+        if (rnd() < 0.3) predio(-66, z, 22, 22, 12 + Math.floor(rnd() * 3) * 3, Math.floor(rnd() * 4));
+        else if (rnd() < 0.8) { this._casa(scene, -60, z - 7, Math.PI); this._casa(scene, -78, z + 6, Math.PI); }
       }
     }
     mats.forEach((m, i) => {
@@ -280,66 +287,78 @@ export class MundoLitoral {
     t.material = mTopo; t.freezeWorldMatrix();
   }
 
-  // ======================= comércio e casas (rua interna) =======================
+  // casa térrea/sobrado com telhado de duas águas (juntadas por cor no fim)
+  _casa(scene, x, z, giro = 0) {
+    const cores = ['#f1e3c6', '#cfe3d3', '#f2d0c4', '#d6dff0', '#f5edb5'];
+    const cor = cores[Math.floor(rnd() * cores.length)];
+    const w = 10 + rnd() * 2, d = 11, h = rnd() < 0.5 ? 3.6 : 6.4;
+    const c = B.MeshBuilder.CreateBox('casa', { width: w, height: h, depth: d }, scene);
+    c.position.set(x, h / 2, z);
+    (this._casas.corpos[cor] = this._casas.corpos[cor] || []).push(c);
+    // telhado: triângulo extrudado ao longo da profundidade
+    const beiral = 0.5;
+    const forma = [new B.Vector3(-w / 2 - beiral, 0, 0), new B.Vector3(w / 2 + beiral, 0, 0), new B.Vector3(0, w * 0.32, 0), new B.Vector3(-w / 2 - beiral, 0, 0)];
+    const caminho = [new B.Vector3(0, 0, -d / 2 - beiral), new B.Vector3(0, 0, d / 2 + beiral)];
+    const t = B.MeshBuilder.ExtrudeShape('telhado', { shape: forma, path: caminho, cap: B.Mesh.CAP_ALL, sideOrientation: B.Mesh.DOUBLESIDE }, scene);
+    t.position.set(x, h, z);
+    t.rotation.y = giro;
+    this._casas.telhados.push(t);
+    this.obstaculos.push({ x, z, mx: w / 2, mz: d / 2 });
+  }
+
+  _juntarCasas(scene) {
+    const { corpos, telhados } = this._casas;
+    let n = 0;
+    for (const [cor, lista] of Object.entries(corpos)) {
+      const m = B.Mesh.MergeMeshes(lista, true, true); m.material = mat(scene, 'casa' + n++, cor, 0.05); m.freezeWorldMatrix();
+    }
+    if (telhados.length) {
+      const tt = B.Mesh.MergeMeshes(telhados, true, true); tt.material = mat(scene, 'telha', '#b5523a', 0.05); tt.freezeWorldMatrix();
+    }
+  }
+
+  // ======================= comércio (rua interna) =======================
   _comercio(scene) {
     const lojas = [
-      ['Padaria Pão Quente', '#f2c48d'], ['Açaí da Orla', '#7b3fb5'], ['Farmácia Bem Viver', '#3aa66b'],
+      ['Padaria Pão Quente', '#f2c48d'], ['Açaí da Orla', '#8a55c4'], ['Farmácia Bem Viver', '#3aa66b'],
       ['Mercado Bom Preço', '#e2574c'], ['Loja do Rael', '#ffd23a', T.desenhosRael], ['Sorveteria Mar Gelado', '#8fd3f0'],
-      ['Pet Shop Au Au', '#f39b3d'], ['Pizzaria Bella', '#c94b3a'], ['Livraria Ler Mais', '#5e7fc4'], ['Bazar da Vila', '#d68fc0'],
+      ['Pet Shop Au Au', '#f39b3d'], ['Pizzaria Bella', '#c94b3a'],
     ];
     const frente = L.ruaInternaX[0] - 3;      // calçada oeste da rua interna
     const larg = 18, alt = 8, prof = 14;
-    const paredes = [];
     let i = 0;
     for (const [z0, z1] of [[-293, -7], [7, 293]]) {
-      for (let z = z0 + 12; z < z1 - 8 && i < lojas.length * 2; z += larg + 4) {
-        const [nome, cor, extra] = lojas[i % lojas.length];
+      for (let z = z0 + 24; z < z1 - 12 && i < lojas.length; z += larg + 16) {
+        const [nome, cor, extra] = lojas[i];
         i++;
         const x = frente - prof / 2;
+        // prédio pequeno pintado na cor da loja (todos os lados)
         const caixa = B.MeshBuilder.CreateBox('loja', { width: prof, height: alt, depth: larg }, scene);
         caixa.position.set(x, alt / 2, z);
-        paredes.push(caixa);
-        const m = mat(scene, 'loja-' + nome + i, '#ffffff', 0.1);
+        caixa.material = mat(scene, 'parede-' + nome, cor, 0.05);
+        caixa.freezeWorldMatrix();
+        const telhado = B.MeshBuilder.CreateBox('platibanda', { width: prof + 0.4, height: 0.6, depth: larg + 0.4 }, scene);
+        telhado.position.set(x, alt + 0.3, z);
+        telhado.material = mat(scene, 'plat-' + nome, '#e8e4dc', 0.05);
+        const m = mat(scene, 'loja-' + nome, '#ffffff', 0.1);
         m.diffuseTexture = T.texLoja(scene, nome, cor, extra);
         const f = B.MeshBuilder.CreatePlane('fachada-loja', { width: larg - 0.4, height: alt - 0.4 }, scene);
         f.position.set(frente + 0.06, alt / 2, z);
         f.rotation.y = -Math.PI / 2;
         f.material = m;
         f.freezeWorldMatrix();
-        // toldo
         const toldo = B.MeshBuilder.CreateBox('toldo', { width: 1.6, height: 0.12, depth: larg - 2 }, scene);
-        toldo.position.set(frente + 0.8, 3.4, z); toldo.rotation.z = -0.25;
+        toldo.position.set(frente + 0.75, 3.4, z); toldo.rotation.z = -0.25;
         toldo.material = mat(scene, 'toldo' + i, cor, 0.1);
         toldo.freezeWorldMatrix();
-        this.obstaculos.push({ x, z, mx: prof / 2, mz: larg / 2 });
       }
     }
-    const mParede = mat(scene, 'parede-loja', '#e9e2d6', 0.05);
-    const u = B.Mesh.MergeMeshes(paredes, true, true); u.material = mParede; u.freezeWorldMatrix();
-
-    // casas atrás das lojas (telhado de duas águas)
-    const coresCasa = ['#f1e3c6', '#cfe3d3', '#f2d0c4', '#d6dff0', '#f5edb5'];
-    const corpos = coresCasa.map(() => []);
-    const telhados = [];
-    for (let z = -290; z < 290; z += 16 + rnd() * 4) {
-      if (L.transversaisZ.some((t) => Math.abs(z - t) < 10)) continue;
-      for (const x of [-150, -172]) {
-        const w = 10 + rnd() * 2, d = 11, h = 4 + rnd() * 1.5;
-        const c = B.MeshBuilder.CreateBox('casa', { width: w, height: h, depth: d }, scene);
-        c.position.set(x, h / 2, z);
-        corpos[Math.floor(rnd() * coresCasa.length)].push(c);
-        const t = B.MeshBuilder.CreateCylinder('telhado', { diameter: w * 1.25, height: d + 0.6, tessellation: 3 }, scene);
-        t.rotation.set(Math.PI / 2, 0, Math.PI / 2);
-        t.scaling.set(1, 1, 0.55);
-        t.position.set(x, h + w * 0.18, z);
-        telhados.push(t);
-      }
+    // casas espalhadas atrás das lojas (só cenário: o caminhão não passa para lá)
+    for (let z = -280; z < 290; z += 30 + rnd() * 10) {
+      if (L.transversaisZ.some((t) => Math.abs(z - t) < 12)) continue;
+      if (rnd() < 0.75) this._casa(scene, -150 - rnd() * 8, z, 0);
     }
-    coresCasa.forEach((cor, k) => {
-      if (!corpos[k].length) return;
-      const m = B.Mesh.MergeMeshes(corpos[k], true, true); m.material = mat(scene, 'casa' + k, cor, 0.05); m.freezeWorldMatrix();
-    });
-    const tt = B.Mesh.MergeMeshes(telhados, true, true); tt.material = mat(scene, 'telha', '#b5523a', 0.05); tt.freezeWorldMatrix();
+    this._juntarCasas(scene);
   }
 
   // ======================= árvores =======================
@@ -393,15 +412,15 @@ export class MundoLitoral {
     };
     const longeDeCruzamento = (z) => L.transversaisZ.every((t) => Math.abs(z - t) > 14);
     // canteiro central: amendoeiras
-    for (let z = L.zMin + 10; z < L.zMax - 5; z += 22) if (longeDeCruzamento(z)) plantar(amendoeira, 25, z + rnd() * 4, 0.9 + rnd() * 0.3, 0.5);
+    for (let z = L.zMin + 10; z < L.zMax - 5; z += 44) if (longeDeCruzamento(z)) plantar(amendoeira, 25, z + rnd() * 4, 0.9 + rnd() * 0.3, 0.5);
     // calçadão: coqueiros e algumas amendoeiras
-    for (let z = -700; z < 700; z += 16) plantar(coqueiroM, 53 + rnd() * 2, z + rnd() * 5, 0.9 + rnd() * 0.35, 0.4);
-    for (let z = -690; z < 700; z += 48) plantar(amendoeira, 45.5, z, 0.85, 0.5);
+    for (let z = -700; z < 700; z += 30) plantar(coqueiroM, 53 + rnd() * 2, z + rnd() * 6, 0.9 + rnd() * 0.35, 0.4);
+    for (let z = -690; z < 700; z += 96) plantar(amendoeira, 45.5, z, 0.85, 0.5);
     // areia: coqueiros soltos
-    for (let z = -900; z < 900; z += 37) plantar(coqueiroM, 60 + rnd() * 14, z + rnd() * 10, 0.8 + rnd() * 0.4);
+    for (let z = -900; z < 900; z += 75) plantar(coqueiroM, 60 + rnd() * 14, z + rnd() * 10, 0.8 + rnd() * 0.4);
     // calçada dos prédios e rua interna
-    for (let z = L.zMin + 8; z < L.zMax; z += 28) if (longeDeCruzamento(z)) plantar(amendoeira, 7.5, z, 0.75, 0.45);
-    for (let z = L.zMin + 14; z < L.zMax; z += 34) if (longeDeCruzamento(z)) plantar(amendoeira, L.ruaInternaX[1] + 1.8, z, 0.7, 0.45);
+    for (let z = L.zMin + 8; z < L.zMax; z += 56) if (longeDeCruzamento(z)) plantar(amendoeira, 7.5, z, 0.75, 0.45);
+    for (let z = L.zMin + 14; z < L.zMax; z += 68) if (longeDeCruzamento(z)) plantar(amendoeira, L.ruaInternaX[1] + 1.8, z, 0.7, 0.45);
   }
 
   // ======================= postes de luz =======================
@@ -611,7 +630,7 @@ export class MundoLitoral {
   // Algum ponto do caminhão encostou em algo?
   bateu(pontos, raio) {
     for (const p of pontos) {
-      if (p.x > this.limiteLeste || p.x < -240 || p.z > 372 || p.z < -372) return true;
+      if (p.x > this.limiteLeste || p.x < L.ruaInternaX[0] - 3 || p.z > 372 || p.z < -372) return true;
       for (const o of this.obstaculos) {
         if (o.r !== undefined) {
           const dx = p.x - o.x, dz = p.z - o.z, d = o.r + raio;
