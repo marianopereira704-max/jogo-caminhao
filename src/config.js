@@ -5,9 +5,9 @@ export const CONFIG = {
   resolucaoMin: 1.5,          // a qualidade automática nunca desce abaixo disso
 
   // Movimento do caminhão (metros e segundos)
-  velMaxFrente: 13,           // ~47 km/h
+  velMaxFrente: 16.7,         // 60 km/h
   velMaxRe: 4,                // ~14 km/h
-  aceleracao: 3.0,            // quanto ganha de velocidade por segundo
+  aceleracao: 3.6,            // quanto ganha de velocidade por segundo (0 a 60 em ~4,6 s)
   aceleracaoRe: 2.0,
   freio: 9.0,                 // quanto perde por segundo freando
   rolagem: 1.4,               // quanto perde por segundo soltando tudo

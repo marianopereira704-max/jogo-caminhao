@@ -669,7 +669,7 @@ export class MundoLitoral {
       poste.position.set(x, h / 2 - 0.2, z + 0.05); poste.material = mPoste;
       this.obstaculos.push({ x, z, r: 0.25 });
     };
-    const pare = T.texPlacaPare(scene), vel = T.texPlacaVelocidade(scene, 40), ped = T.texPlacaPedestre(scene);
+    const pare = T.texPlacaPare(scene), vel = T.texPlacaVelocidade(scene, 60), ped = T.texPlacaPedestre(scene);
     const nomes = { '-300': 'Enseada do Suá', '0': 'Jardim Camburi', '300': 'Praia do Canto' };
     for (const zt of L.transversaisZ) {
       placa(pare, L.calcadaOesteX[0] + 1, zt - L.meiaRua - 1.2, -Math.PI / 2);
