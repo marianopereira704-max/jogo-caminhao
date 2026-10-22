@@ -32,7 +32,7 @@ const preferencias = carregar();
 const audio = new Audio();
 const mundo = new MundoLitoral(scene);
 const caminhao = new Caminhao(scene, mundo.sombras);
-caminhao.modelo.definirReflexo(criarReflexo(scene, [mundo.ceu, mundo.chao]));
+caminhao.modelo.definirReflexo(mundo.env);
 caminhao.aplicarVisual(preferencias);
 const camera = new CameraSeguir(scene, canvas);
 
