@@ -7,7 +7,6 @@ import { Caminhao } from './caminhao.js';
 import { CameraSeguir } from './camera.js';
 import { MundoLitoral } from './mundo/litoral.js';
 import { Garagem } from './garagem.js';
-import { criarReflexo } from './reflexo.js';
 
 const B = window.BABYLON;
 if (!B) throw new Error('Babylon.js não carregou. Confira a internet e recarregue.');
@@ -112,21 +111,29 @@ document.getElementById('btn-jogar').addEventListener('click', async (e) => {
   await entrarTelaCheia();
 });
 
-// ----- Laço principal, limitado a 30 quadros por segundo -----
+// ----- Laço principal: alvo de 60 quadros por segundo, com qualidade automática -----
 const elVel = document.getElementById('vel');
+let velMostrada = -1;
 let ultimo = performance.now();
-const intervalo = 1000 / CONFIG.fps;
+let fpsAlvo = CONFIG.fps;
+let intervalo = 1000 / fpsAlvo;
 
-// qualidade automática: se em 3 s sair bem menos de 30 fps, baixa a resolução um degrau
+// qualidade automática: se em 3 s ficar bem abaixo do alvo, primeiro baixa a resolução;
+// se já estiver no mínimo e ainda não aguentar 60, passa a rodar estável a 30
 let quadros = 0;
 let inicioJanela = performance.now();
 const conferirQualidade = (agora) => {
   quadros++;
   if (agora - inicioJanela < 3000) return;
   const fps = quadros / ((agora - inicioJanela) / 1000);
-  if (estado !== 'inicio' && fps < CONFIG.fps * 0.85 && resolucao > CONFIG.resolucaoMin) {
-    resolucao = Math.max(CONFIG.resolucaoMin, resolucao - 0.25);
-    ajustarResolucao();
+  if (estado !== 'inicio' && fps < fpsAlvo * 0.85) {
+    if (resolucao > CONFIG.resolucaoMin) {
+      resolucao = Math.max(CONFIG.resolucaoMin, resolucao - 0.25);
+      ajustarResolucao();
+    } else if (fpsAlvo > CONFIG.fpsMinimo) {
+      fpsAlvo = CONFIG.fpsMinimo;
+      intervalo = 1000 / fpsAlvo;
+    }
   }
   quadros = 0;
   inicioJanela = agora;
@@ -150,7 +157,8 @@ engine.runRenderLoop(() => {
     audio.atualizarMotor(Math.abs(caminhao.velocidade) / CONFIG.velMaxFrente, controles.estado.acelerar);
     audio.atualizarBipRe(caminhao.marcha === 'R' && !caminhao.marchaPendente, dt);
     audio.hidraulico(caminhao.cacambaMexendo);
-    elVel.textContent = Math.round(caminhao.velocidadeKmh);
+    const v = Math.round(caminhao.velocidadeKmh);
+    if (v !== velMostrada) { elVel.textContent = v; velMostrada = v; }   // só mexe na tela quando muda
   }
   camera.atualizar(caminhao, dt);
   mundo.seguirSol(caminhao.posicao);

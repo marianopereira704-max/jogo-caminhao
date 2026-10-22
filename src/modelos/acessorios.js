@@ -138,14 +138,9 @@ export function montarAcessorios(ctx) {
         A.ambar.emissiveColor.set(0.35 + pulso * 0.65, 0.18 + pulso * 0.42, 0.0);
       }
       if (grupos.bandeirinhas.isEnabled()) {
-        // balançam com o vento, mais forte com velocidade
-        const forca = 0.12 + Math.min(Math.abs(velocidade), 13) * 0.03;
-        let i = 0;
-        for (const f of grupos.bandeirinhas.getChildMeshes(true)) {
-          if (f.name !== 'band') continue;
-          f.rotation.z = Math.sin(tempo * 6 + i) * forca * 0.6; // balança para fora e para dentro
-          i++;
-        }
+        // o varal inteiro balança de leve com o vento (mais forte com velocidade)
+        const forca = 0.004 + Math.min(Math.abs(velocidade), 16) * 0.0008;
+        grupos.bandeirinhas.rotation.z = Math.sin(tempo * 5) * forca;
       }
     },
   };

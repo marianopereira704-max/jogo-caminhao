@@ -3,7 +3,7 @@
 // O caminhão aponta para +z (frente), +x é o lado direito, y é para cima.
 // Medidas em metros, próximas das reais (~10,4 m de comprimento).
 
-import { caixaArredondada } from './formas.js';
+import { caixaArredondada, juntarPorMaterial } from './formas.js';
 import { montarRoda, raioDaRoda, reflexoRodas } from './rodas.js';
 import { montarAcessorios } from './acessorios.js';
 import { montarPintura } from './pintura.js';
@@ -242,6 +242,10 @@ export function montarCacamba8x4(scene) {
       if (v.roda) v.roda.descartar();
       v.pivo.position.y = R;
       v.roda = montarRoda(tipo, { scene, giro: v.giro, lado: v.lado, larg: v.larg, dupla: !v.dianteira });
+      // cada roda vira poucas malhas (uma por material) em vez de dezenas de peças
+      v.giro.rotation.x = 0;
+      v.roda.partes.length = 0;
+      v.roda.partes.push(...juntarPorMaterial(v.giro));
       if (sombrasGerador) for (const p of v.roda.partes) sombrasGerador.addShadowCaster(p);
     }
   };
@@ -334,6 +338,15 @@ export function montarCacamba8x4(scene) {
       for (const r of rodasDianteiras) r.pivo.rotation.y = volante * 0.5 * r.fator;
     },
   };
+  // junta as peças fixas por material: corpo, caçamba e cada acessório
+  // (antes eram ~450 objetos separados; cada um custava uma chamada de desenho)
+  const nos = [corpo, cacPivo, ...corpo.getChildTransformNodes(true).filter((n) => n.name.startsWith('acessorio-')),
+    ...cacPivo.getChildTransformNodes(true).filter((n) => n.name.startsWith('acessorio-'))];
+  for (const no of nos) juntarPorMaterial(no);
+  partes.length = 0;
+  for (const m of corpo.getChildMeshes(false)) {
+    if (m.isVisible && m.getTotalVertices() > 0 && !vagas.some((v) => v.roda.partes.includes(m))) partes.push(m);
+  }
   modelo.definirCacamba(0);
   return modelo;
 }

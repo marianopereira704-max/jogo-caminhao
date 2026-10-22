@@ -7,6 +7,7 @@
 //
 // Texturas reais (CC0) do Poly Haven em assets/texturas; céu HDRI (CC0) em assets/ceu.
 import * as T from './texturas-cidade.js';
+import { juntarCenaPorMaterial } from '../modelos/formas.js';
 
 const B = window.BABYLON;
 
@@ -52,7 +53,9 @@ export class MundoLitoral {
     this._praca(scene);
     this._shopping(scene);
     this._fundo(scene);
-    for (const c of this.casters) this.sombras.addShadowCaster(c);
+    // junta tudo que é fixo por material: de ~250 objetos para ~60 chamadas de desenho
+    const projetamSombra = new Set(this.casters.filter(Boolean).map((c) => c.material));
+    this.otimizacao = juntarCenaPorMaterial(scene, { sombras: this.sombras, projetamSombra });
   }
 
   // ======================= céu HDRI, luz, cor de câmera =======================
@@ -94,7 +97,7 @@ export class MundoLitoral {
     this.sol.shadowMinZ = 1; this.sol.shadowMaxZ = 420;
     this.sombras = new B.ShadowGenerator(2048, this.sol);
     this.sombras.usePercentageCloserFiltering = true;
-    this.sombras.filteringQuality = B.ShadowGenerator.QUALITY_MEDIUM;
+    this.sombras.filteringQuality = B.ShadowGenerator.QUALITY_LOW;
     this.sombras.darkness = 0.32;
     this.sombras.bias = 0.0015;
     this.sombras.normalBias = 0.02;
@@ -680,9 +683,12 @@ export class MundoLitoral {
     for (const z of [-150, 150]) placa(vel, L.ciclovia[1] + 1.2, z, Math.PI);
   }
 
+  // troca as luzes só quando muda a fase (antes recriava as cores a cada quadro)
   _cicloSemaforo() {
     const t = this.tempo % 14;
     const fase = t < 6 ? 'verde' : t < 8 ? 'amarelo' : 'vermelho';
+    if (fase === this._faseSemaforo) return;
+    this._faseSemaforo = fase;
     const acesa = { vermelho: '#ff2a1e', amarelo: '#ffb81a', verde: '#2bff6a' };
     const apagada = { vermelho: '#3a0b0b', amarelo: '#3a2e0b', verde: '#0b2e14' };
     for (const cor of ['vermelho', 'amarelo', 'verde']) this.luzes[cor].emissiveColor = B.Color3.FromHexString(cor === fase ? acesa[cor] : apagada[cor]);
@@ -788,7 +794,9 @@ export class MundoLitoral {
       const p = pts[i];
       const pil = B.MeshBuilder.CreateBox('pilar', { width: 5, height: p.y, depth: 5 }, scene); pil.position.set(p.x, p.y / 2, p.z); pil.material = this.M.paredes[3];
     }
-    morro(230, 40, 60, 14, mMorro);
+    // Ilha do Socó: ilhota arredondada e baixa
+    const ilha = B.MeshBuilder.CreateSphere('ilha', { diameter: 1, segments: 12, slice: 0.5 }, scene);
+    ilha.scaling.set(70, 22, 50); ilha.position.set(230, 0, 40); ilha.material = mMorro; ilha.freezeWorldMatrix();
   }
 
   atualizar(dt) {

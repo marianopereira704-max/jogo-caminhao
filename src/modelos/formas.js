@@ -78,3 +78,64 @@ export function aro(nome, raio, lado, scene) {
   a.rotation.z = -Math.PI / 2;
   return a;
 }
+
+// Junta os filhos diretos de um nó em UMA malha por material (menos chamadas de desenho).
+// Mantém a posição: as peças são juntadas no espaço do mundo e depois presas de volta no nó.
+// Peças que se mexem sozinhas (pistão, placas de pintura, etc.) ficam de fora por nome.
+const NAO_JUNTAR = new Set(['pistao', 'pistao-camisa', 'padrao', 'emissor']);
+export function juntarPorMaterial(no) {
+  const filhos = no.getChildMeshes(true).filter((m) =>
+    m.material && !(m instanceof B.InstancedMesh) && !NAO_JUNTAR.has(m.name) && m.getTotalVertices() > 0);
+  const grupos = new Map();
+  for (const m of filhos) {
+    if (!grupos.has(m.material)) grupos.set(m.material, []);
+    grupos.get(m.material).push(m);
+  }
+  no.computeWorldMatrix(true);
+  const resultado = [];
+  for (const [material, lista] of grupos) {
+    if (lista.length < 2) { resultado.push(...lista); continue; }
+    for (const m of lista) {
+      m.computeWorldMatrix(true);
+      // todas as peças precisam ter os mesmos dados (posição, normal, UV) para juntar
+      if (!m.isVerticesDataPresent(B.VertexBuffer.UVKind)) m.setVerticesData(B.VertexBuffer.UVKind, new Float32Array(m.getTotalVertices() * 2));
+      for (const k of [B.VertexBuffer.ColorKind, B.VertexBuffer.UV2Kind, B.VertexBuffer.TangentKind]) if (m.isVerticesDataPresent(k)) m.removeVerticesData(k);
+    }
+    const u = B.Mesh.MergeMeshes(lista, true, true, undefined, false, false);
+    if (!u) { resultado.push(...lista); continue; }
+    u.material = material;
+    u.setParent(no);
+    resultado.push(u);
+  }
+  return resultado;
+}
+
+// Junta todas as malhas FIXAS de uma cena por material (usado no mapa, depois de montado).
+// Instâncias (árvores, postes) já são desenhadas em lote e ficam de fora.
+export function juntarCenaPorMaterial(scene, { ignorar = () => false, sombras = null, projetamSombra = new Set() } = {}) {
+  const grupos = new Map();
+  for (const m of scene.meshes) {
+    if (!m.material || m instanceof B.InstancedMesh || !m.isVisible || m.infiniteDistance || ignorar(m)) continue;
+    if (m.hasInstances || m.getTotalVertices() === 0) continue;
+    if (!grupos.has(m.material)) grupos.set(m.material, []);
+    grupos.get(m.material).push(m);
+  }
+  let antes = 0, depois = 0;
+  for (const [material, lista] of grupos) {
+    antes += lista.length;
+    let final = lista;
+    if (lista.length > 1) {
+      for (const m of lista) {
+        m.computeWorldMatrix(true);
+        if (!m.isVerticesDataPresent(B.VertexBuffer.UVKind)) m.setVerticesData(B.VertexBuffer.UVKind, new Float32Array(m.getTotalVertices() * 2));
+        for (const k of [B.VertexBuffer.ColorKind, B.VertexBuffer.UV2Kind, B.VertexBuffer.TangentKind]) if (m.isVerticesDataPresent(k)) m.removeVerticesData(k);
+      }
+      const recebe = lista.some((m) => m.receiveShadows);
+      const u = B.Mesh.MergeMeshes(lista, true, true, undefined, false, false);
+      if (u) { u.material = material; u.receiveShadows = recebe; u.freezeWorldMatrix(); final = [u]; }
+    }
+    depois += final.length;
+    if (sombras && projetamSombra.has(material)) for (const m of final) sombras.addShadowCaster(m);
+  }
+  return { antes, depois };
+}
