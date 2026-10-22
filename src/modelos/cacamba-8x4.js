@@ -192,11 +192,16 @@ export function montarCacamba8x4(scene) {
   espelhar((s) => caixa(0.1, H + 0.45, 0.14, s * 1.2, yb + (H + 0.45) / 2, L - 0.02, M.pinturaCacamba, cacPivo));
   // lona azul enrolada no alto da frente
   cilindro(0.28, 2.3, 0, yb + H + 0.1, L - 0.35, M.lona, 'x', cacPivo, 16);
-  // tampa traseira com frisos e lanternas
-  caixa(2.5, H, 0.1, 0, yb + H / 2, -0.03, M.pinturaCacamba, cacPivo);
-  for (const y of [0.45, 0.95]) caixa(2.42, 0.08, 0.08, 0, yb + y, -0.1, M.pinturaCacamba, cacPivo);
-  caixa(2.5, 0.12, 0.14, 0, yb + H - 0.06, -0.05, M.preto, cacPivo);
-  for (let x = -0.9; x <= 0.91; x += 0.36) caixa(0.14, 0.05, 0.03, x, yb + 0.2, -0.1, M.refletivo, cacPivo);
+  // tampa traseira com frisos e refletivos: gira na dobradiça de cima e
+  // fica pendurada (abre) quando a caçamba levanta, para a carga sair
+  const tampaPivo = new B.TransformNode('tampa-pivo', scene);
+  tampaPivo.parent = cacPivo;
+  tampaPivo.position.set(0, yb + H, -0.05);
+  const ty = -(yb + H);   // posições abaixo relativas à dobradiça
+  caixa(2.5, H, 0.1, 0, ty + yb + H / 2, 0.02, M.pinturaCacamba, tampaPivo);
+  for (const y of [0.45, 0.95]) caixa(2.42, 0.08, 0.08, 0, ty + yb + y, -0.05, M.pinturaCacamba, tampaPivo);
+  caixa(2.5, 0.12, 0.14, 0, ty + yb + H - 0.06, 0, M.preto, tampaPivo);
+  for (let x = -0.9; x <= 0.91; x += 0.36) caixa(0.14, 0.05, 0.03, x, ty + yb + 0.2, -0.05, M.refletivo, tampaPivo);
 
   // padrões de pintura nas laterais e acessórios
   const pintura = montarPintura({ scene, cacPivo, meiaLargura: 1.335, comprimento: L - 0.2, altura: 0.95, base: yb + 0.12 });
@@ -276,6 +281,10 @@ export function montarCacamba8x4(scene) {
     partes,
     materiais: M,
     corpo,
+    cacPivo,
+    tampaPivo,
+    // medidas internas da caçamba (no espaço do cacPivo): fundo em y, frente em z
+    dimCacamba: { comprimento: L, altura: H, fundo: yb, larguraInterna: 2.3 },
     rodasDianteiras,
     get raioRoda() { return R; },
     get tipoRoda() { return tipoRoda; },
@@ -290,6 +299,8 @@ export function montarCacamba8x4(scene) {
     definirCacamba(fracao) {
       anguloCacamba = Math.max(0, Math.min(1, fracao)) * 0.84;
       cacPivo.rotation.x = -anguloCacamba;
+      // a tampa fica na vertical (pendurada) e balança um pouco para fora
+      tampaPivo.rotation.x = anguloCacamba * 1.15;
       atualizarPistao();
     },
     get cacamba() { return anguloCacamba / 0.84; },
@@ -340,7 +351,7 @@ export function montarCacamba8x4(scene) {
   };
   // junta as peças fixas por material: corpo, caçamba e cada acessório
   // (antes eram ~450 objetos separados; cada um custava uma chamada de desenho)
-  const nos = [corpo, cacPivo, ...corpo.getChildTransformNodes(true).filter((n) => n.name.startsWith('acessorio-')),
+  const nos = [corpo, cacPivo, tampaPivo, ...corpo.getChildTransformNodes(true).filter((n) => n.name.startsWith('acessorio-')),
     ...cacPivo.getChildTransformNodes(true).filter((n) => n.name.startsWith('acessorio-'))];
   for (const no of nos) juntarPorMaterial(no);
   partes.length = 0;

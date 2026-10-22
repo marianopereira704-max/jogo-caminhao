@@ -233,3 +233,10 @@ svg { display: block; width: 100%; height: 100%; pointer-events: none; }
 @property --p { syntax: '<number>'; inherits: false; initial-value: 0; }
 #btn-config.segurando::after { opacity: 1; animation: encher 1.5s linear forwards; }
 @keyframes encher { from { --p: 0; } to { --p: 100; } }
+
+/* botão da caçamba com a cor da carga que está levando */
+#btn-cacamba[data-carga="areia"] { background: rgba(226, 182, 90, .95); }
+#btn-cacamba[data-carga="pedra"] { background: rgba(141, 147, 154, .95); }
+#btn-cacamba[data-carga="tora"]  { background: rgba(138, 90, 51, .95); }
+#btn-cacamba[data-carga="tabua"] { background: rgba(217, 174, 114, .95); color: #3a2a14; }
+#btn-cacamba[data-carga]:not([data-carga=""]) { box-shadow: 0 0 0 .8vh rgba(255,255,255,.6); animation: pulsar 1.2s ease-in-out infinite; }

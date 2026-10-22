@@ -140,6 +140,34 @@ export class Audio {
     this.hidroGanho.gain.setTargetAtTime(ligado ? 0.09 : 0, t, 0.08);
   }
 
+  // ----- Ruído curto filtrado (areia escorrendo, pedra batendo, tora caindo...) -----
+  ruido({ dur = 0.2, freq = 800, tipo = 'lowpass', ganho = 0.3 } = {}) {
+    if (!this.ctx) return;
+    const c = this.ctx, t = c.currentTime;
+    const buf = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * dur)), c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+    const src = c.createBufferSource(); src.buffer = buf;
+    const f = c.createBiquadFilter(); f.type = tipo; f.frequency.value = freq; f.Q.value = tipo === 'bandpass' ? 3 : 0.7;
+    const g = c.createGain(); g.gain.value = ganho;
+    src.connect(f).connect(g).connect(this.mestre);
+    src.start(t);
+  }
+
+  // ----- "Plim" de carga pronta -----
+  ding() {
+    if (!this.ctx) return;
+    const c = this.ctx, t = c.currentTime;
+    [880, 1320].forEach((freq, i) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t + i * 0.14);
+      g.gain.exponentialRampToValueAtTime(0.25, t + i * 0.14 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.14 + 0.6);
+      o.connect(g).connect(this.mestre); o.start(t + i * 0.14); o.stop(t + i * 0.14 + 0.65);
+    });
+  }
+
   // ----- Clique curto para botões -----
   clique(agudo = false) {
     if (!this.ctx) return;

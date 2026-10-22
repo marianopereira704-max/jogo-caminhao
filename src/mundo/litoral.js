@@ -34,6 +34,8 @@ export const L = {
   limiteLesteX: 54.2,           // mureta da praia
 };
 const naZonaBalao = (z) => Math.abs(z) > L.zonaBalao[0] && Math.abs(z) < L.zonaBalao[1];
+// balão + pátio (depósito/obra): a orla (ciclovia, calçadão, coqueiros) não passa por aqui
+const foraDaOrla = (z) => Math.abs(z) > L.zonaBalao[0] && Math.abs(z) < L.limiteZ + 8;
 
 let semente = 2024;
 const rnd = () => { semente = (semente * 16807) % 2147483647; return (semente - 1) / 2147483646; };
@@ -61,6 +63,7 @@ export class MundoLitoral {
     this._praca(scene);
     this._shopping(scene);
     this._fundo(scene);
+    this._mobiliario(scene);
     // junta tudo que é fixo por material: de ~250 objetos para ~60 chamadas de desenho
     const projetamSombra = new Set(this.casters.filter(Boolean).map((c) => c.material));
     this.otimizacao = juntarCenaPorMaterial(scene, { sombras: this.sombras, projetamSombra });
@@ -311,7 +314,7 @@ export class MundoLitoral {
         for (let z = L.zMin; z < L.zMax; z += 10) if (!pertoDeCruzamento(z + 5, 9)) marca('branca', x, z + 5, 0.15, 10);
       }
     }
-    for (let z = -1500; z < 1500; z += 10) if (!naZonaBalao(z + 5)) marca('vermelha', (L.ciclovia[0] + L.ciclovia[1]) / 2, z + 5, 3, 10);
+    for (let z = -1500; z < 1500; z += 10) if (!foraDaOrla(z + 5)) marca('vermelha', (L.ciclovia[0] + L.ciclovia[1]) / 2, z + 5, 3, 10);
     // tracejado branco no meio do balão
     const { x: bx, z: bz, r0, r1 } = L.balao;
     const rm = (r0 + r1) / 2;
@@ -363,7 +366,8 @@ export class MundoLitoral {
       b.calc.push(this._piso('c', L.frenteLojasX, L.ruaInternaX[0], z0, z1, 0.03, 2.4));
     }
     const [zb0, zb1] = L.zonaBalao;
-    for (const [z0, z1] of [[-1500, -zb1], [-zb0, zb0], [zb1, 1500]]) {
+    const zFim = L.limiteZ + 8;
+    for (const [z0, z1] of [[-1500, -zFim], [-zb0, zb0], [zFim, 1500]]) {
       b.calcadao.push(this._piso('cd', L.calcadaoX[0], L.calcadaoX[1], z0, z1, 0.03, 3));
       meioFio(L.ciclovia[1], L.ciclovia[1] + 0.25, z0, z1);
     }
@@ -448,6 +452,7 @@ export class MundoLitoral {
         caixa(listas.vidro, 0.1, 2.3, larg - 2, xf - 1.17, y + 1.4, z);
         // janelas laterais em faixa
         for (const s of [-1, 1]) caixa(listas.vidro, prof - 3, 1.4, 0.1, xc, y + 1.7, z + s * (larg / 2 + 0.03));
+        caixa(listas.vidro, 0.1, 1.4, larg - 4, xc - prof / 2 - 0.03, y + 1.7, z);           // fundos
       }
       // cobertura: platibanda e caixa d'água
       caixa(P, prof + 0.2, 1.2, larg + 0.2, xc, alt + 0.6, z);
@@ -465,6 +470,7 @@ export class MundoLitoral {
         const y = 1 + a * 3;
         caixa(listas.vidro, 0.1, 1.5, larg - 3, xf + 0.03, y + 1.6, z);
         for (const s of [-1, 1]) caixa(listas.vidro, prof - 3, 1.5, 0.1, xc, y + 1.6, z + s * (larg / 2 + 0.03));
+        caixa(listas.vidro, 0.1, 1.5, larg - 3, xc - prof / 2 - 0.03, y + 1.6, z);           // fundos
         caixa(listas.caixilho, 0.25, 0.12, larg, xf + 0.1, y + 0.75, z);
       }
       caixa(P, prof + 0.2, 0.9, larg + 0.2, xc, alt + 0.45, z);
@@ -666,7 +672,7 @@ export class MundoLitoral {
     };
     const longe = (z, d = 16) => L.transversaisZ.every((t) => Math.abs(z - t) > d);
     for (let z = L.zMin + 20; z < L.zMax - 5; z += 46) if (longe(z)) plantar([amendoeira], 25, z, 0.85 + rnd() * 0.25, 0.5);
-    for (let z = -900; z < 900; z += 34) plantar([troncoC, copaC], 51.5 + rnd() * 1.5, z + rnd() * 6, 0.9 + rnd() * 0.3, 0.4);
+    for (let z = -900; z < 900; z += 34) { const zz = z + rnd() * 6; if (!foraDaOrla(zz)) plantar([troncoC, copaC], 51.5 + rnd() * 1.5, zz, 0.9 + rnd() * 0.3, 0.4); }
     for (let z = -900; z < 900; z += 140) plantar([troncoC, copaC], 60 + rnd() * 8, z + rnd() * 20, 0.85 + rnd() * 0.3);
     for (let z = L.zMin + 30; z < L.zMax; z += 64) if (longe(z)) plantar([amendoeira], 7.2, z, 0.7, 0.45);
     this.sombras.addShadowCaster(amendoeira);
@@ -727,7 +733,7 @@ export class MundoLitoral {
       const p = poste.createInstance('poste' + n++); p.position.set(25, 0, z); p.freezeWorldMatrix();
     }
     for (let z = -700; z < 700; z += 40) {
-      if (naZonaBalao(z)) continue;
+      if (foraDaOrla(z)) continue;
       const p = poste.createInstance('poste' + n++); p.position.set(46.5, 0, z); p.rotation.y = Math.PI / 2; p.scaling.setAll(0.85); p.freezeWorldMatrix();
       this.obstaculos.push({ x: 46.5, z, r: 0.3 });
     }
@@ -845,6 +851,74 @@ export class MundoLitoral {
       t.position.set(49, 3.9, z); t.material = mTeto; this.casters.push(t);
       this.obstaculos.push({ x: 49, z, r: 2.8 });
     }
+  }
+
+  // ======================= mobiliário urbano, estacionamentos, praça =======================
+  // Detalhes baratos que dão "vida brasileira": bancos, lixeiras, orelhões, bicicletário,
+  // banca de jornal, vagas pintadas e um parquinho na praça.
+  _mobiliario(scene) {
+    const M = this.M;
+    const cor = (n, h, b = 0.05) => { const m = new B.StandardMaterial(n, scene); m.diffuseColor = B.Color3.FromHexString(h); m.specularColor = new B.Color3(b, b, b); return m; };
+    const madeira = cor('mob-madeira', '#9a6a3f'), verde = cor('mob-verde', '#2f7a4a', 0.2), laranja = cor('mob-laranja', '#f08a1f', 0.3),
+      azulPlaca = cor('mob-azul', '#1f4f9c', 0.1), amarelo = cor('mob-amarelo', '#f2c230', 0.2), vermelho = cor('mob-vermelho', '#c8352b', 0.2);
+    const caixa = (w, h, d, x, y, z, m, giro = 0) => { const b = B.MeshBuilder.CreateBox('mob', { width: w, height: h, depth: d }, scene); b.position.set(x, y, z); b.rotation.y = giro; b.material = m; b.receiveShadows = true; return b; };
+    const cil = (d, h, x, y, z, m, lados = 10) => { const c = B.MeshBuilder.CreateCylinder('mob', { diameter: d, height: h, tessellation: lados }, scene); c.position.set(x, y, z); c.material = m; return c; };
+    const banco = (x, z, giro) => {
+      caixa(1.8, 0.08, 0.45, x, 0.48, z, madeira, giro);
+      const enc = caixa(1.8, 0.45, 0.06, x, 0.78, z, madeira, giro);
+      enc.position.x += Math.cos(giro) * 0; enc.position.addInPlace(new B.Vector3(Math.sin(giro + Math.PI / 2) * 0, 0, 0));
+      for (const s of [-0.75, 0.75]) caixa(0.08, 0.45, 0.42, x + Math.cos(giro) * s, 0.23, z - Math.sin(giro) * s, M.metalEscuro, giro);
+    };
+    const lixeira = (x, z) => { cil(0.45, 0.8, x, 0.4, z, laranja, 12); cil(0.06, 0.9, x - 0.3, 0.45, z, M.metalEscuro, 6); };
+    const orelhao = (x, z, giro) => {
+      cil(0.12, 2.2, x, 1.1, z, M.metalEscuro, 8);
+      const concha = B.MeshBuilder.CreateSphere('mob', { diameter: 1.2, segments: 10, slice: 0.5 }, scene);
+      concha.scaling.set(1, 1.3, 1); concha.rotation.set(-Math.PI / 2, giro, 0); concha.position.set(x, 1.85, z); concha.material = amarelo;
+      caixa(0.22, 0.38, 0.12, x, 1.65, z, M.metalEscuro, giro);
+      this.obstaculos.push({ x, z, r: 0.5 });
+    };
+
+    // calçadão: bancos virados para o mar, lixeiras e bicicletários perto dos quiosques
+    for (let z = -280; z <= 280; z += 40) {
+      if (L.transversaisZ.some((t) => Math.abs(z - t) < 12)) continue;
+      banco(44.2, z, -Math.PI / 2);
+      lixeira(44.2, z + 4);
+      this.obstaculos.push({ x: 44.2, z, mx: 0.4, mz: 1 });
+    }
+    for (const z of [-260, -130, 130, 260]) {
+      for (let k = 0; k < 5; k++) caixa(0.06, 0.8, 0.7, 44.4, 0.4, z + 6 + k * 0.6, M.metal);
+    }
+    // calçada dos prédios: orelhões, lixeiras e uma banca de jornal
+    for (const z of [-205, -75, 75, 205]) { orelhao(9.6, z, Math.PI / 2); lixeira(9.6, z + 3); }
+    caixa(3, 2.6, 2.2, 7.6, 1.3, -40, verde); caixa(3.4, 0.15, 2.6, 7.6, 2.7, -40, verde);
+    caixa(2.6, 1.0, 0.1, 9.25, 1.6, -40, amarelo, Math.PI / 2);
+    this.obstaculos.push({ x: 7.6, z: -40, mx: 1.6, mz: 1.2 });
+
+    // estacionamentos nos fundos dos prédios (lado da rua interna), com placa azul "E"
+    const vagas = [];
+    for (const [z0, z1] of [[-290, -14], [14, 290]]) {
+      for (let z = z0; z < z1; z += 2.6) vagas.push(caixa(5, 0.02, 0.12, -28.5, 0.04, z, M.tintaBranca));
+      const pz = (z0 + z1) / 2;
+      const mt = new B.DynamicTexture('placa-e', { width: 128, height: 128 }, scene, true);
+      const c = mt.getContext(); c.fillStyle = '#1f4f9c'; c.fillRect(0, 0, 128, 128); c.strokeStyle = '#fff'; c.lineWidth = 8; c.strokeRect(6, 6, 116, 116);
+      c.fillStyle = '#fff'; c.font = 'bold 92px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('E', 64, 70); mt.update();
+      const me = new B.StandardMaterial('placa-e-m', scene); me.diffuseTexture = mt; me.backFaceCulling = false;
+      const placa = B.MeshBuilder.CreatePlane('placa-e', { width: 0.8, height: 0.8 }, scene);
+      placa.position.set(-31.4, 2.4, pz); placa.rotation.y = Math.PI / 2; placa.material = me;
+      cil(0.08, 2.4, -31.4, 1.2, pz + 0.05, M.metalEscuro, 6);
+    }
+
+    // praça: bancos em volta, parquinho (escorregador, balanço, gangorra) e postes
+    for (let k = 0; k < 6; k++) banco(-40 + k * 7, 320, Math.PI);
+    const px = -24, pz = 318;
+    caixa(1.2, 0.1, 3.2, px, 1.0, pz, vermelho).rotation.x = 0.55;                 // rampa do escorregador
+    caixa(1.2, 2.0, 1.2, px, 1.0, pz - 2.1, azulPlaca);                            // torre
+    for (const s of [-1, 1]) cil(0.1, 2.6, px + 5 + s * 1.6, 1.3, pz, M.metalEscuro, 6);
+    caixa(3.4, 0.1, 0.1, px + 5, 2.6, pz, M.metalEscuro);
+    for (const s of [-0.6, 0.6]) caixa(0.5, 0.06, 0.3, px + 5 + s, 0.7, pz, amarelo);
+    caixa(3, 0.1, 0.3, px - 6, 0.45, pz, verde).rotation.z = 0.2;                 // gangorra
+    cil(0.3, 0.45, px - 6, 0.22, pz, M.metalEscuro, 8);
+    this.obstaculos.push({ x: px, z: pz, mx: 9, mz: 2.5 });
   }
 
   // ======================= fundo: cidade distante, morros, convento, ponte, ilha =======================

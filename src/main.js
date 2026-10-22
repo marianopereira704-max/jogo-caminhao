@@ -7,6 +7,8 @@ import { Caminhao } from './caminhao.js';
 import { CameraSeguir } from './camera.js';
 import { MundoLitoral } from './mundo/litoral.js';
 import { Garagem } from './garagem.js';
+import { Patios } from './mundo/patios.js';
+import { Cargas } from './cargas.js';
 
 const B = window.BABYLON;
 if (!B) throw new Error('Babylon.js não carregou. Confira a internet e recarregue.');
@@ -41,6 +43,13 @@ const voltarParaEstrada = () => {
   camera.pular(caminhao);
 };
 voltarParaEstrada();
+
+const patios = new Patios(scene, mundo);
+const cargas = new Cargas(scene, {
+  caminhao, patios, sombras: mundo.sombras, audio,
+  // o botão da caçamba fica com a cor da carga
+  aoMudar: (c) => { const b = document.getElementById('btn-cacamba'); b.dataset.carga = c.tipo || ''; b.dataset.fase = c.fase; },
+});
 
 caminhao.aoEncostar = (forte) => { audio.toc(forte); try { navigator.vibrate && navigator.vibrate(forte ? [60, 40, 30] : 30); } catch {} };
 
@@ -80,6 +89,7 @@ const controles = new Controles({
   aoMudarPreferencias: (p) => salvar(p),
   aoGaragem: () => { audio.clique(); irParaGaragem(); },
   aoCacamba: () => {
+    if (cargas.ocupado) return;   // enquanto carrega, a caçamba não mexe
     const subindo = caminhao.alternarCacamba();
     audio.clique(subindo);
     document.getElementById('btn-cacamba').classList.toggle('ligado', subindo);
@@ -157,12 +167,14 @@ engine.runRenderLoop(() => {
     audio.atualizarMotor(Math.abs(caminhao.velocidade) / CONFIG.velMaxFrente, controles.estado.acelerar);
     audio.atualizarBipRe(caminhao.marcha === 'R' && !caminhao.marchaPendente, dt);
     audio.hidraulico(caminhao.cacambaMexendo);
+    cargas.atualizar(dt);
     const v = Math.round(caminhao.velocidadeKmh);
     if (v !== velMostrada) { elVel.textContent = v; velMostrada = v; }   // só mexe na tela quando muda
   }
   camera.atualizar(caminhao, dt);
   mundo.seguirSol(caminhao.posicao);
   mundo.atualizar(dt);
+  patios.atualizar(dt);
   scene.render();
   conferirQualidade(agora);
 });
